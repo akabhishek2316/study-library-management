@@ -82,7 +82,11 @@ export default function Memberships() {
         }))
       })
       .catch((e) => setError(e.message))
-  }, [form.planId, form.startDate, plans])
+  }, [
+    form.planId,
+    form.startDate,
+    plans,
+  ])
 
   const act = async (fn, msg) => {
     setError('')
@@ -176,7 +180,7 @@ export default function Memberships() {
                 key={s._id}
                 value={s._id}
               >
-                {s.name}
+                {s.name} — {s.phone}
               </option>
             ))}
           </select>
@@ -258,7 +262,8 @@ export default function Memberships() {
 
         {plan && (
           <small className="muted">
-            {plan.shift.name} shift, {plan.durationDays} days
+            {plan.shift.name} shift,{' '}
+            {plan.durationDays} days
           </small>
         )}
       </form>
@@ -268,7 +273,9 @@ export default function Memberships() {
           {VIEWS.map((v) => (
             <button
               key={v}
-              className={v === view ? 'on' : ''}
+              className={
+                v === view ? 'on' : ''
+              }
               onClick={() => setView(v)}
             >
               {v}
@@ -309,7 +316,8 @@ export default function Memberships() {
                     {m.plan?.name}
 
                     <small>
-                      {m.shift?.name} · {rupees(m.amount)}
+                      {m.shift?.name} ·{' '}
+                      {rupees(m.amount)}
                     </small>
                   </td>
 
@@ -350,7 +358,9 @@ export default function Memberships() {
                     {m.status !== 'cancelled' && (
                       <button
                         className="ghost"
-                        onClick={() => renew(m)}
+                        onClick={() =>
+                          renew(m)
+                        }
                       >
                         Renew
                       </button>
@@ -360,7 +370,10 @@ export default function Memberships() {
                       <button
                         className="ghost"
                         onClick={() =>
-                          setStatus(m, 'paused')
+                          setStatus(
+                            m,
+                            'paused'
+                          )
                         }
                       >
                         Pause
@@ -371,7 +384,10 @@ export default function Memberships() {
                       <button
                         className="ghost"
                         onClick={() =>
-                          setStatus(m, 'active')
+                          setStatus(
+                            m,
+                            'active'
+                          )
                         }
                       >
                         Resume
@@ -382,8 +398,13 @@ export default function Memberships() {
                       <button
                         className="ghost danger"
                         onClick={() =>
-                          confirm('Cancel this membership?') &&
-                          setStatus(m, 'cancelled')
+                          confirm(
+                            'Cancel this membership?'
+                          ) &&
+                          setStatus(
+                            m,
+                            'cancelled'
+                          )
                         }
                       >
                         Cancel

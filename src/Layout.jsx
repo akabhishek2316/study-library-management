@@ -44,6 +44,12 @@ const ADMIN = [
     '#a78bfa',
   ],
   [
+  '/admin/admissions',
+  'Admission Requests',
+  'admission',
+  '#f59e0b',
+],
+  [
     '/admin/seats',
     'Seats',
     'grid',
@@ -55,6 +61,12 @@ const ADMIN = [
     'card',
     '#818cf8',
   ],
+  [
+  '/admin/seat-change-requests',
+  'Seat Change Requests',
+  'swap',
+  '#22d3ee',
+],
   [
     '/admin/payments',
     'Payments',
@@ -340,25 +352,40 @@ export default function Layout({ admin }) {
   }, [])
 
   useEffect(() => {
-    const load = () =>
-      api(
-        '/notifications/unread-count'
-      )
-        .then((d) =>
-          setUnread(d.unread)
-        )
-        .catch(() => {})
-
-    load()
-
-    const t = setInterval(
-      load,
-      60000
+  const load = () =>
+    api(
+      '/notifications/unread-count'
     )
+      .then((d) =>
+        setUnread(d.unread)
+      )
+      .catch(() => {})
 
-    return () =>
-      clearInterval(t)
-  }, [loc.pathname])
+  load()
+
+  const onUpdated = () => {
+    load()
+  }
+
+  window.addEventListener(
+    'notifications-updated',
+    onUpdated
+  )
+
+  const t = setInterval(
+    load,
+    60000
+  )
+
+  return () => {
+    clearInterval(t)
+
+    window.removeEventListener(
+      'notifications-updated',
+      onUpdated
+    )
+  }
+}, [loc.pathname])
 
   useEffect(() => {
     const h = (e) => {

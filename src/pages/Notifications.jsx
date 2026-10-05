@@ -56,6 +56,27 @@ export default function Notifications() {
     load()
   }
 
+  const clearAll = async () => {
+  
+
+  try {
+    await api('/notifications', {
+      method: 'DELETE',
+    })
+
+    setData({
+      items: [],
+      unread: 0,
+    })
+
+    window.dispatchEvent(
+      new Event('notifications-updated')
+    )
+  } catch (e) {
+    setError(e.message)
+  }
+}
+
   if (!data) {
     return error ? (
       <div className="alert error">
@@ -78,14 +99,25 @@ export default function Notifications() {
       >
         <h1>Notifications</h1>
 
-        {data.unread > 0 && (
-          <button
-            className="ghost"
-            onClick={readAll}
-          >
-            Mark all as read
-          </button>
-        )}
+        <div className="row-form">
+  {data.unread > 0 && (
+    <button
+      className="ghost"
+      onClick={readAll}
+    >
+      Mark all as read
+    </button>
+  )}
+
+  {data.items.length > 0 && (
+    <button
+      className="danger"
+      onClick={clearAll}
+    >
+      Clear Notifications
+    </button>
+  )}
+</div>
       </div>
 
       <div

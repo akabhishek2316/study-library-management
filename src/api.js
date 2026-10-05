@@ -1,8 +1,8 @@
 import { beginRequest, toast } from './effects'
 
 const BASE =
-  import.meta.env.VITE_API_URL 
-  // || 'http://localhost:5000/api'
+  import.meta.env.VITE_API_URL
+  || 'http://localhost:5000/api'
 
 // Requests that should not pop up a "Done" message
 // (they have their own feedback on the page, or are background work)
@@ -37,20 +37,29 @@ export async function api(
     let res
 
     try {
+      const isFormData =
+        body instanceof FormData
+
+      const headers = {
+        ...(token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {}),
+      }
+
+      if (!isFormData) {
+        headers['Content-Type'] =
+          'application/json'
+      }
+
       res = await fetch(BASE + path, {
         method,
-        headers: {
-          'Content-Type':
-            'application/json',
-
-          ...(token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : {}),
-        },
+        headers,
         body: body
-          ? JSON.stringify(body)
+          ? isFormData
+            ? body
+            : JSON.stringify(body)
           : undefined,
       })
     } catch {

@@ -5,9 +5,9 @@ import {
 } from 'react-router-dom'
 
 import { useAuth } from './AuthContext'
-
+import Home from './pages/Home'
 import Layout from './Layout'
-
+import AdmissionRequests from './pages/AdmissionRequests'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Students from './pages/Students'
@@ -28,6 +28,9 @@ import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import MyDashboard from './pages/MyDashboard'
 import VerifyReceipt from './pages/VerifyReceipt'
+import Admission from './pages/Admission'
+import ChangeSeat from './pages/ChangeSeat'
+import SeatChangeRequests from './pages/SeatChangeRequests'
 
 function Guard({ roles, children }) {
   const { user, loading } = useAuth()
@@ -44,6 +47,18 @@ function Guard({ roles, children }) {
     return (
       <Navigate
         to="/login"
+        replace
+      />
+    )
+  }
+
+  if (
+    user.role === 'student' &&
+    user.admissionStatus !== 'approved'
+  ) {
+    return (
+      <Navigate
+        to="/"
         replace
       />
     )
@@ -74,37 +89,66 @@ function OwnerOnly({ children }) {
   )
 }
 
-function Home() {
-  const { user, loading } = useAuth()
+// function Home() {
+//   const { user, loading } = useAuth()
 
-  if (loading) {
-    return (
-      <p className="center">
-        Loading...
-      </p>
-    )
-  }
+//   if (loading) {
+//     return (
+//       <p className="center">
+//         Loading...
+//       </p>
+//     )
+//   }
 
-  if (!user) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    )
-  }
+//   if (!user) {
+//     return (
+//       <div className="center">
+//         <h1>Study Library</h1>
 
-  return (
-    <Navigate
-      to={
-        user.role === 'student'
-          ? '/student'
-          : '/admin'
-      }
-      replace
-    />
-  )
-}
+//         <p>
+//           Welcome to Study Library.
+//         </p>
+
+//         <div>
+//           <Navigate
+//             to="/login"
+//             replace
+//           />
+//         </div>
+//       </div>
+//     )
+//   }
+
+//   if (
+//     user.role === 'student' &&
+//     user.admissionStatus !== 'approved'
+//   ) {
+//     return (
+//       <div className="center">
+//         <h1>Study Library</h1>
+
+//         <p>
+//           Your admission request is pending.
+//         </p>
+
+//         <p>
+//           Please wait for admin approval.
+//         </p>
+//       </div>
+//     )
+//   }
+
+//   return (
+//     <Navigate
+//       to={
+//         user.role === 'student'
+//           ? '/student'
+//           : '/admin'
+//       }
+//       replace
+//     />
+//   )
+// }
 
 export default function App() {
   return (
@@ -113,6 +157,11 @@ export default function App() {
         path="/"
         element={<Home />}
       />
+
+      <Route
+  path="/admission"
+  element={<Admission />}
+/>
 
       <Route
         path="/verify-receipt/:token"
@@ -145,10 +194,22 @@ export default function App() {
         />
 
         <Route
+  path="admissions"
+  element={<AdmissionRequests />}
+/>
+
+
+
+        <Route
           path="seats"
           element={<Seats />}
         />
 
+
+<Route
+  path="seat-change-requests"
+  element={<SeatChangeRequests />}
+/>
         <Route
           path="memberships"
           element={<Memberships />}
@@ -228,6 +289,11 @@ export default function App() {
           index
           element={<MyDashboard />}
         />
+
+        <Route
+  path="change-seat"
+  element={<ChangeSeat />}
+/>
 
         <Route
           path="attendance"

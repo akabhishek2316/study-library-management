@@ -195,39 +195,50 @@ export default function MyDashboard() {
         </Link>
       )}
 
+      
+
       {c ? (
-        <div className="card hero">
-          <span className="muted">
-            Your seat
-          </span>
+  <div className="card hero">
+    <span className="muted">
+      Your seat
+    </span>
 
-          <b className="big">
-            {c.seat?.number}
-          </b>
+    <b className="big">
+      {c.seat?.number}
+    </b>
 
-          <p>
-            {c.plan?.name} · {c.shift?.name}{' '}
-            ({c.shift?.startTime}-
-            {c.shift?.endTime})
-          </p>
+    <p>
+      {c.plan?.name} · {c.shift?.name}{' '}
+      ({c.shift?.startTime}-
+      {c.shift?.endTime})
+    </p>
 
-          <p>
-            Valid till{' '}
-            <b>{fmtDate(c.endDate)}</b> ·{' '}
-            {left} day
-            {left === 1 ? '' : 's'} left
-            {c.status === 'paused' &&
-              ' (paused)'}
-          </p>
-        </div>
-      ) : (
-        <div className="card">
-          <p>
-            You don't have an active seat right now.
-            Please contact the library desk.
-          </p>
-        </div>
-      )}
+    <p>
+      Valid till{' '}
+      <b>{fmtDate(c.endDate)}</b> ·{' '}
+      {left} day
+      {left === 1 ? '' : 's'} left
+      {c.status === 'paused' &&
+        ' (paused)'}
+    </p>
+
+    {c.status === 'active' && (
+      <Link
+        to="/student/change-seat"
+        className="button"
+      >
+        Change Seat
+      </Link>
+    )}
+  </div>
+) : (
+  <div className="card">
+    <p>
+      You don't have an active seat right now.
+      Please contact the library desk.
+    </p>
+  </div>
+)}
 
       {owing.map((m) => (
         <div

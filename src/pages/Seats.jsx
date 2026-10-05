@@ -52,8 +52,26 @@ export default function Seats() {
       .catch((e) => setError(e.message))
 
   useEffect(() => {
+  load()
+}, [shift, date])
+
+useEffect(() => {
+  const refresh = () => {
     load()
-  }, [shift, date])
+  }
+
+  window.addEventListener(
+    'focus',
+    refresh
+  )
+
+  return () => {
+    window.removeEventListener(
+      'focus',
+      refresh
+    )
+  }
+}, [shift, date])
 
   const addSeat = async (e) => {
     e.preventDefault()
