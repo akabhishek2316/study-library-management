@@ -21,6 +21,8 @@ export default function Memberships() {
   const [students, setStudents] = useState([])
   const [plans, setPlans] = useState([])
   const [freeSeats, setFreeSeats] = useState([])
+  const [halls, setHalls] = useState([])
+  const [selectedHall, setSelectedHall] = useState('')
 
   const [form, setForm] = useState({
     studentId: '',
@@ -72,13 +74,47 @@ export default function Memberships() {
 
         setFreeSeats(f)
 
+        const uniqueHalls = []
+
+        f.forEach((s) => {
+          if (!s.hall) return
+
+          const hall =
+            typeof s.hall === 'object'
+              ? s.hall
+              : {
+                  _id: s.hall,
+                  name: `Hall ${s.hall}`,
+                }
+
+          if (
+            !uniqueHalls.some(
+              (h) => h._id === hall._id
+            )
+          ) {
+            uniqueHalls.push(hall)
+          }
+        })
+
+        setHalls(uniqueHalls)
+
+        setSelectedHall((currentHall) => {
+          const hallExists = uniqueHalls.some(
+            (h) => h._id === currentHall
+          )
+
+          return hallExists
+            ? currentHall
+            : uniqueHalls[0]?._id || ''
+        })
+
         setForm((x) => ({
           ...x,
           seatId: f.some(
             (s) => s._id === x.seatId
           )
             ? x.seatId
-            : f[0]?._id || '',
+            : '',
         }))
       })
       .catch((e) => setError(e.message))
@@ -87,6 +123,26 @@ export default function Memberships() {
     form.startDate,
     plans,
   ])
+
+  const hallSeats = freeSeats.filter((s) => {
+    const hallId =
+      typeof s.hall === 'object'
+        ? s.hall?._id
+        : s.hall
+
+    return hallId === selectedHall
+  })
+
+  useEffect(() => {
+    setForm((x) => ({
+      ...x,
+      seatId: hallSeats.some(
+        (s) => s._id === x.seatId
+      )
+        ? x.seatId
+        : hallSeats[0]?._id || '',
+    }))
+  }, [selectedHall, freeSeats])
 
   const act = async (fn, msg) => {
     setError('')
@@ -195,6 +251,7 @@ export default function Memberships() {
               setForm({
                 ...form,
                 planId: e.target.value,
+                seatId: '',
               })
             }
             required
@@ -220,10 +277,43 @@ export default function Memberships() {
               setForm({
                 ...form,
                 startDate: e.target.value,
+                seatId: '',
               })
             }
             required
           />
+        </label>
+
+        <label>
+          Hall
+
+          <select
+            value={selectedHall}
+            onChange={(e) => {
+              setSelectedHall(e.target.value)
+
+              setForm({
+                ...form,
+                seatId: '',
+              })
+            }}
+            required
+          >
+            {halls.length === 0 && (
+              <option value="">
+                No available hall
+              </option>
+            )}
+
+            {halls.map((hall) => (
+              <option
+                key={hall._id}
+                value={hall._id}
+              >
+                {hall.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
@@ -238,19 +328,21 @@ export default function Memberships() {
               })
             }
             required
+            disabled={!selectedHall}
           >
-            {freeSeats.length === 0 && (
+            {hallSeats.length === 0 && (
               <option value="">
                 No free seat
               </option>
             )}
 
-            {freeSeats.map((s) => (
+            {hallSeats.map((s) => (
               <option
                 key={s._id}
                 value={s._id}
               >
-                {s.number} ({s.type})
+                {s.number}
+                 {/* ({s.type}) */}
               </option>
             ))}
           </select>
@@ -288,6 +380,7 @@ export default function Memberships() {
             <thead>
               <tr>
                 <th>Student</th>
+                <th>Hall</th>
                 <th>Seat</th>
                 <th>Plan</th>
                 <th>Dates</th>
@@ -309,7 +402,11 @@ export default function Memberships() {
                   </td>
 
                   <td>
-                    {m.seat?.number}
+                    {m.hall?.name || '-'}
+                  </td>
+
+                  <td>
+                    {m.seat?.number || '-'}
                   </td>
 
                   <td>
@@ -417,7 +514,7 @@ export default function Memberships() {
               {items.length === 0 && (
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan="8"
                     className="muted"
                   >
                     Nothing here.

@@ -1,0 +1,1468 @@
+/* =========================================================
+   FLOOR PLAN EDITOR
+   Responsive Floor Plan
+   Seats + Rectangle + Circle + Text
+   Smooth Drag + Resize
+   ========================================================= */
+
+
+/* =========================================================
+   GLOBAL BOX SIZING
+   ========================================================= */
+
+.floor-plan-editor,
+.floor-plan-editor * {
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   EDITOR WRAPPER
+   ========================================================= */
+
+.floor-plan-editor {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+
+/* =========================================================
+   FLOOR PLAN WRAPPER
+   ========================================================= */
+
+.floor-plan-wrapper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+
+/* =========================================================
+   SEAT CREATE FORM
+   ========================================================= */
+
+.seat-create-form {
+  width: 100%;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.seat-create-form label {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+
+  min-width: 130px;
+
+  flex: 1 1 150px;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.seat-create-form input,
+.seat-create-form select {
+  width: 100%;
+
+  min-height: 40px;
+
+  padding: 8px 11px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  background: #fff;
+  color: #111827;
+
+  font-size: 14px;
+
+  outline: none;
+}
+
+.seat-create-form input:focus,
+.seat-create-form select:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.12);
+}
+
+.seat-add-button {
+  min-height: 40px;
+
+  padding: 8px 16px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #2563eb;
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+}
+
+.seat-add-button:hover {
+  background: #1d4ed8;
+}
+
+.seat-add-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   LAYOUT TOOLBAR
+   ========================================================= */
+
+.layout-toolbar {
+  width: 100%;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 14px;
+}
+
+.layout-toolbar button,
+.layout-toolbar select {
+  min-height: 38px;
+}
+
+.layout-info {
+  flex: 1 1 auto;
+
+  min-width: 160px;
+
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.group-select {
+  min-height: 38px;
+
+  padding: 7px 10px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+
+  background: #fff;
+  color: #111827;
+}
+
+
+/* =========================================================
+   FLOOR PLAN BOARD
+   ========================================================= */
+
+.floor-plan-editor .plan {
+  --floor-grid-size: 22px;
+
+  position: relative;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  height: auto;
+
+  min-height: 280px;
+
+  margin: 0;
+
+  overflow: hidden;
+
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(148, 163, 184, 0.09) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      0deg,
+      rgba(148, 163, 184, 0.09) 1px,
+      transparent 1px
+    ),
+    #fff;
+
+  background-size:
+    var(--floor-grid-size)
+    var(--floor-grid-size);
+
+  container-type: inline-size;
+
+  isolation: isolate;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  touch-action: auto;
+}
+
+
+/* =========================================================
+   EDITING BOARD
+   ========================================================= */
+
+.floor-plan-editor .plan.editing {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(37, 99, 235, 0.10) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      0deg,
+      rgba(37, 99, 235, 0.10) 1px,
+      transparent 1px
+    ),
+    #f8fbff;
+
+  background-size:
+    var(--floor-grid-size)
+    var(--floor-grid-size);
+
+  border-color: #2563eb;
+
+  box-shadow:
+    inset 0 0 0 1px
+    rgba(37, 99, 235, 0.08);
+
+  touch-action: none;
+}
+
+
+/* =========================================================
+   EDITING BORDER
+   ========================================================= */
+
+.floor-plan-editor .plan.editing::after {
+  content: '';
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  border: 1px dashed
+    rgba(37, 99, 235, 0.32);
+
+  border-radius: inherit;
+
+  z-index: 1;
+}
+
+
+/* =========================================================
+   BOARD DRAGGING
+   ========================================================= */
+
+.floor-plan-editor .plan.is-dragging {
+  cursor: grabbing;
+}
+
+
+/* =========================================================
+   SEATS
+   ========================================================= */
+
+.floor-plan-editor .plan .pseat {
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  /*
+   * Responsive seat size.
+   * cqw = board width based.
+   */
+  width:
+    clamp(
+      30px,
+      5.4cqw,
+      68px
+    );
+
+  height:
+    clamp(
+      28px,
+      4.5cqw,
+      54px
+    );
+
+  min-width: 28px;
+  min-height: 26px;
+
+  max-width: 68px;
+  max-height: 54px;
+
+  transform:
+    translate(-50%, -50%);
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 3px;
+
+  border: 2px solid #16a34a;
+
+  border-radius: 8px;
+
+  background: #dcfce7;
+
+  color: #166534;
+
+  font-size:
+    clamp(
+      9px,
+      1.2cqw,
+      13px
+    );
+
+  line-height: 1.1;
+
+  cursor: pointer;
+
+  overflow: hidden;
+
+  z-index: 20;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  touch-action: auto;
+
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+
+/* =========================================================
+   EDIT MODE SEAT
+   ========================================================= */
+
+.floor-plan-editor .plan.editing .pseat {
+  cursor: grab;
+
+  touch-action: none;
+}
+
+.floor-plan-editor .plan.editing .pseat:active {
+  cursor: grabbing;
+}
+
+
+/* =========================================================
+   SEAT TEXT
+   ========================================================= */
+
+.floor-plan-editor .plan .pseat b {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-size:
+    clamp(
+      9px,
+      1.25cqw,
+      13px
+    );
+
+  font-weight: 700;
+
+  line-height: 1.1;
+
+  text-align: center;
+}
+
+.floor-plan-editor .plan .pseat small {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+
+  margin-top: 2px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  font-size:
+    clamp(
+      7px,
+      0.95cqw,
+      10px
+    );
+
+  line-height: 1.1;
+
+  opacity: 0.8;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   SEAT STATES
+   ========================================================= */
+
+.floor-plan-editor .plan .pseat.available {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #166534;
+}
+
+.floor-plan-editor .plan .pseat.occupied {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #991b1b;
+}
+
+.floor-plan-editor .plan .pseat.maintenance {
+  background: #fef3c7;
+  border-color: #d97706;
+  color: #92400e;
+}
+
+
+/* =========================================================
+   SEAT HOVER
+   ========================================================= */
+
+.floor-plan-editor
+.plan:not(.editing)
+.pseat:hover {
+  transform:
+    translate(-50%, -50%)
+    scale(1.05);
+
+  box-shadow:
+    0 5px 14px
+    rgba(15, 23, 42, 0.16);
+}
+
+
+/* =========================================================
+   PICKED SEAT
+   ========================================================= */
+
+.floor-plan-editor
+.plan
+.pseat.picked {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px
+      rgba(37, 99, 235, 0.22),
+    0 6px 16px
+      rgba(37, 99, 235, 0.18);
+
+  z-index: 80;
+}
+
+
+/* =========================================================
+   DRAGGING SEAT
+   ========================================================= */
+
+.floor-plan-editor
+.plan
+.pseat.dragging {
+  cursor: grabbing;
+
+  z-index: 100;
+
+  box-shadow:
+    0 10px 24px
+    rgba(15, 23, 42, 0.22);
+
+  transition: none;
+}
+
+
+/* =========================================================
+   ALIGNMENT GUIDES
+   ========================================================= */
+
+.floor-plan-editor
+.alignment-guide {
+  position: absolute;
+
+  pointer-events: none;
+
+  z-index: 150;
+
+  background: #2563eb;
+
+  opacity: 0.75;
+}
+
+.floor-plan-editor
+.alignment-guide.vertical {
+  top: 0;
+  bottom: 0;
+
+  width: 1px;
+
+  transform:
+    translateX(-0.5px);
+}
+
+.floor-plan-editor
+.alignment-guide.horizontal {
+  left: 0;
+  right: 0;
+
+  height: 1px;
+
+  transform:
+    translateY(-0.5px);
+}
+
+
+/* =========================================================
+   FLOOR OBJECT
+   ========================================================= */
+
+.floor-plan-editor .floor-object {
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  /*
+   * Object width/height JSX se percentage me
+   * aa raha hai, isliye yaha percentage based
+   * dimensions ko override nahi karna.
+   */
+
+  min-width: 20px;
+  min-height: 20px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 4px;
+
+  border: 2px solid #475569;
+
+  background:
+    rgba(226, 232, 240, 0.65);
+
+  color: #111827;
+
+  overflow: visible;
+
+  z-index: 5;
+
+  cursor: grab;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  touch-action: none;
+
+  word-break: break-word;
+
+  /*
+   * IMPORTANT:
+   * transform JSX me rotation ke liye use hota hai.
+   * Isliye CSS me translate nahi lagana.
+   */
+
+  transform-origin: center center;
+
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+
+/* =========================================================
+   RECTANGLE
+   ========================================================= */
+
+.floor-plan-editor
+.floor-object.rect {
+  border-radius: 6px;
+
+  overflow: visible;
+}
+
+
+/* =========================================================
+   CIRCLE
+   ========================================================= */
+
+.floor-plan-editor
+.floor-object.circle {
+  border-radius: 50%;
+
+  overflow: visible;
+}
+
+
+/* =========================================================
+   TEXT OBJECT
+   ========================================================= */
+
+.floor-plan-editor
+.floor-object.text {
+  border-color: transparent;
+
+  background: transparent;
+
+  padding: 2px 4px;
+
+  overflow: hidden;
+
+  text-align: center;
+
+  white-space: pre-wrap;
+
+  overflow-wrap: anywhere;
+
+  line-height: 1.15;
+
+  /*
+   * Default responsive font.
+   * JSX ka --floor-font-size isko override karega.
+   */
+  font-size:
+    clamp(
+      10px,
+      1.6cqw,
+      22px
+    );
+}
+
+
+/* =========================================================
+   TEXT CONTENT
+   ========================================================= */
+
+.floor-plan-editor
+.floor-object.text {
+  /*
+   * Long text ko board ke bahar nahi jane dena.
+   */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   SELECTED OBJECT
+   ========================================================= */
+
+.floor-plan-editor
+.floor-object.selected {
+  outline:
+    2px solid #2563eb;
+
+  outline-offset: 2px;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(37, 99, 235, 0.12);
+
+  z-index: 15;
+}
+
+
+/* =========================================================
+   OBJECT DRAGGING
+   ========================================================= */
+
+.floor-plan-editor
+.floor-object.dragging {
+  cursor: grabbing;
+
+  box-shadow:
+    0 10px 25px
+    rgba(15, 23, 42, 0.18);
+
+  transition: none;
+}
+
+
+/* =========================================================
+   RESIZE HANDLE
+   ========================================================= */
+
+.floor-plan-editor
+.floor-resize-handle {
+  position: absolute;
+
+  width:
+    clamp(
+      12px,
+      1.8cqw,
+      16px
+    );
+
+  height:
+    clamp(
+      12px,
+      1.8cqw,
+      16px
+    );
+
+  right:
+    clamp(
+      -8px,
+      -0.9cqw,
+      -5px
+    );
+
+  bottom:
+    clamp(
+      -8px,
+      -0.9cqw,
+      -5px
+    );
+
+  border: 2px solid #fff;
+
+  border-radius: 4px;
+
+  background: #2563eb;
+
+  cursor: nwse-resize;
+
+  z-index: 200;
+
+  box-shadow:
+    0 1px 5px
+    rgba(15, 23, 42, 0.25);
+
+  touch-action: none;
+}
+
+.floor-plan-editor
+.floor-resize-handle:hover {
+  background: #1d4ed8;
+}
+
+
+/* =========================================================
+   OBJECT PANEL
+   ========================================================= */
+
+.floor-plan-editor
+.floor-object-panel {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(150px, 1fr)
+    );
+
+  gap: 10px;
+
+  margin-top: 12px;
+
+  padding: 12px;
+
+  border: 1px solid #dbe1ea;
+
+  border-radius: 10px;
+
+  background: #fff;
+
+  box-shadow:
+    0 4px 14px
+    rgba(15, 23, 42, 0.06);
+}
+
+.floor-plan-editor
+.floor-object-panel label {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+
+  min-width: 0;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  color: #374151;
+}
+
+.floor-plan-editor
+.floor-object-panel input,
+.floor-plan-editor
+.floor-object-panel select {
+  width: 100%;
+
+  min-height: 36px;
+
+  padding: 6px 8px;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 7px;
+
+  background: #fff;
+
+  color: #111827;
+
+  outline: none;
+}
+
+.floor-plan-editor
+.floor-object-panel input:focus,
+.floor-plan-editor
+.floor-object-panel select:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.10);
+}
+
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.floor-plan-editor
+.floor-editor-toolbar,
+.floor-plan-editor
+.floor-plan-toolbar {
+  width: 100%;
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
+}
+
+
+/* =========================================================
+   FLOOR TOOL
+   ========================================================= */
+
+.floor-plan-editor
+.floor-tool {
+  min-height: 36px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  padding: 7px 12px;
+
+  border: 1px solid #d1d5db;
+
+  border-radius: 8px;
+
+  background: #fff;
+
+  color: #1f2937;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.floor-plan-editor
+.floor-tool:hover {
+  background: #f8fafc;
+
+  border-color: #94a3b8;
+}
+
+.floor-plan-editor
+.floor-tool:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+.floor-plan-editor
+.floor-tool.primary {
+  background: #2563eb;
+
+  border-color: #2563eb;
+
+  color: #fff;
+}
+
+.floor-plan-editor
+.floor-tool.primary:hover {
+  background: #1d4ed8;
+
+  border-color: #1d4ed8;
+}
+
+.floor-plan-editor
+.floor-tool.danger {
+  background: #dc2626;
+
+  border-color: #dc2626;
+
+  color: #fff;
+}
+
+.floor-plan-editor
+.floor-tool.danger:hover {
+  background: #b91c1c;
+
+  border-color: #b91c1c;
+}
+
+
+/* =========================================================
+   HELP
+   ========================================================= */
+
+.floor-plan-editor
+.floor-editor-help {
+  width: 100%;
+
+  margin-bottom: 10px;
+
+  padding: 8px 10px;
+
+  border-radius: 8px;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  line-height: 1.45;
+}
+
+
+/* =========================================================
+   EMPTY
+   ========================================================= */
+
+.floor-plan-editor
+.floor-empty {
+  min-height: 280px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 24px;
+
+  border: 1px dashed #cbd5e1;
+
+  border-radius: 14px;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  text-align: center;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1024px) {
+
+  .floor-plan-editor .plan {
+    --floor-grid-size: 18px;
+
+    min-height: 260px;
+
+    border-radius: 12px;
+  }
+
+  .floor-plan-editor
+  .floor-object-panel {
+    grid-template-columns:
+      repeat(
+        auto-fit,
+        minmax(135px, 1fr)
+      );
+  }
+
+}
+
+
+/* =========================================================
+   TABLET / LARGE MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+  .seat-create-form {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 10px;
+  }
+
+  .seat-create-form label {
+    min-width: 0;
+  }
+
+  .seat-add-button {
+    width: 100%;
+  }
+
+  .layout-toolbar {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    align-items: stretch;
+  }
+
+  .layout-info {
+    grid-column: 1 / -1;
+  }
+
+  .group-select {
+    width: 100%;
+  }
+
+
+  /* -----------------------------------------------
+     BOARD
+     ----------------------------------------------- */
+
+  .floor-plan-editor .plan {
+    --floor-grid-size: 16px;
+
+    min-height: 240px;
+
+    border-radius: 10px;
+  }
+
+
+  /* -----------------------------------------------
+     SEAT
+     ----------------------------------------------- */
+
+  .floor-plan-editor
+  .plan
+  .pseat {
+    width:
+      clamp(
+        30px,
+        6.2cqw,
+        52px
+      );
+
+    height:
+      clamp(
+        28px,
+        5.2cqw,
+        46px
+      );
+
+    border-width: 1.5px;
+
+    border-radius: 7px;
+  }
+
+  .floor-plan-editor
+  .plan
+  .pseat b {
+    font-size:
+      clamp(
+        8px,
+        1.7cqw,
+        12px
+      );
+  }
+
+  .floor-plan-editor
+  .plan
+  .pseat small {
+    font-size:
+      clamp(
+        6px,
+        1.25cqw,
+        9px
+      );
+  }
+
+
+  /* -----------------------------------------------
+     OBJECTS
+     ----------------------------------------------- */
+
+  .floor-plan-editor
+  .floor-object {
+    min-width: 16px;
+    min-height: 16px;
+
+    padding: 3px;
+  }
+
+  .floor-plan-editor
+  .floor-object.text {
+    padding: 2px 3px;
+
+    font-size:
+      clamp(
+        9px,
+        2cqw,
+        18px
+      );
+  }
+
+
+  /* -----------------------------------------------
+     TOOLBAR
+     ----------------------------------------------- */
+
+  .floor-plan-editor
+  .floor-editor-toolbar,
+  .floor-plan-editor
+  .floor-plan-toolbar {
+    display: grid;
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 7px;
+  }
+
+  .floor-plan-editor
+  .floor-tool {
+    width: 100%;
+
+    min-height: 38px;
+  }
+
+
+  /* -----------------------------------------------
+     OBJECT PANEL
+     ----------------------------------------------- */
+
+  .floor-plan-editor
+  .floor-object-panel {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+
+    gap: 8px;
+
+    padding: 10px;
+  }
+
+
+  /* -----------------------------------------------
+     RESIZE HANDLE
+     ----------------------------------------------- */
+
+  .floor-plan-editor
+  .floor-resize-handle {
+    width: 13px;
+    height: 13px;
+
+    right: -6px;
+    bottom: -6px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .seat-create-form {
+    grid-template-columns: 1fr;
+  }
+
+  .layout-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .layout-info {
+    grid-column: auto;
+  }
+
+  .floor-plan-editor .plan {
+    min-height: 220px;
+
+    border-radius: 9px;
+  }
+
+  .floor-plan-editor
+  .plan
+  .pseat {
+    width:
+      clamp(
+        30px,
+        7cqw,
+        48px
+      );
+
+    height:
+      clamp(
+        27px,
+        5.8cqw,
+        43px
+      );
+  }
+
+  .floor-plan-editor
+  .floor-editor-toolbar,
+  .floor-plan-editor
+  .floor-plan-toolbar {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .floor-plan-editor
+  .floor-object-panel {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .floor-plan-editor .plan {
+    --floor-grid-size: 12px;
+
+    min-height: 200px;
+  }
+
+  .floor-plan-editor
+  .plan
+  .pseat {
+    width:
+      clamp(
+        28px,
+        7.4cqw,
+        44px
+      );
+
+    height:
+      clamp(
+        26px,
+        6.2cqw,
+        40px
+      );
+
+    padding: 2px;
+
+    border-radius: 6px;
+  }
+
+  .floor-plan-editor
+  .plan
+  .pseat b {
+    font-size:
+      clamp(
+        7px,
+        1.8cqw,
+        10px
+      );
+  }
+
+  .floor-plan-editor
+  .plan
+  .pseat small {
+    display: none;
+  }
+
+  .floor-plan-editor
+  .floor-editor-toolbar,
+  .floor-plan-editor
+  .floor-plan-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .floor-plan-editor
+  .floor-tool {
+    min-height: 36px;
+  }
+
+  .floor-plan-editor
+  .floor-object-panel {
+    padding: 8px;
+  }
+
+}
+
+
+/* =========================================================
+   LANDSCAPE MOBILE
+   ========================================================= */
+
+@media (
+  max-width: 768px
+) and (
+  orientation: landscape
+) {
+
+  .floor-plan-editor .plan {
+    min-height: 230px;
+  }
+
+  .floor-plan-editor
+  .floor-editor-toolbar,
+  .floor-plan-editor
+  .floor-plan-toolbar {
+    grid-template-columns:
+      repeat(
+        4,
+        minmax(0, 1fr)
+      );
+  }
+
+}
+
+
+/* =========================================================
+   TOUCH DEVICES
+   ========================================================= */
+
+@media (
+  hover: none
+) and (
+  pointer: coarse
+) {
+
+  .floor-plan-editor
+  .plan
+  .pseat {
+    min-width: 30px;
+    min-height: 28px;
+  }
+
+  .floor-plan-editor
+  .floor-tool {
+    min-height: 40px;
+  }
+
+  .floor-plan-editor
+  .floor-resize-handle {
+    width: 16px;
+    height: 16px;
+
+    right: -8px;
+    bottom: -8px;
+  }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+
+  .floor-plan-editor
+  .plan
+  .pseat,
+
+  .floor-plan-editor
+  .floor-object,
+
+  .floor-plan-editor
+  .floor-tool {
+    transition: none;
+  }
+
+}

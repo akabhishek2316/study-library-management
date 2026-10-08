@@ -194,9 +194,10 @@ export default function Payments() {
                 key={d._id}
                 value={d._id}
               >
-                {d.student?.name} · Seat{' '}
-                {d.seat?.number} · due{' '}
-                {rupees(d.due)}
+                {d.student?.name} ·{' '}
+{d.membership?.hall?.name || d.hall?.name || '-'} · Seat{' '}
+{d.seat?.number || '-'} · due{' '}
+{rupees(d.due)}
               </option>
             ))}
           </select>
@@ -303,7 +304,7 @@ export default function Payments() {
                 <thead>
                   <tr>
                     <th>Student</th>
-                    <th>Seat / Plan</th>
+                    <th>Hall / Seat / Plan</th>
                     <th>Ends</th>
                     <th>Paid</th>
                     <th>Due</th>
@@ -323,13 +324,14 @@ export default function Payments() {
                       </td>
 
                       <td>
-                        {d.seat?.number}
+  {d.hall?.name || d.membership?.hall?.name || '-'} · Seat{' '}
+  {d.seat?.number || '-'}
 
-                        <small>
-                          {d.plan?.name} ·{' '}
-                          {d.shift?.name}
-                        </small>
-                      </td>
+  <small>
+    {d.plan?.name} ·{' '}
+    {d.shift?.name}
+  </small>
+</td>
 
                       <td>
                         {fmtDate(d.endDate)}
@@ -493,11 +495,10 @@ export default function Payments() {
                         {p.student?.name}
 
                         <small>
-                          Seat{' '}
-                          {p.membership?.seat?.number}{' '}
-                          ·{' '}
-                          {p.membership?.plan?.name}
-                        </small>
+  {p.membership?.hall?.name || '-'} · Seat{' '}
+  {p.membership?.seat?.number || '-'} ·{' '}
+  {p.membership?.plan?.name}
+</small>
                       </td>
 
                       <td>

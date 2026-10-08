@@ -17,42 +17,48 @@ const periodLabel = (period) => {
 const HERO_SLIDES = [
   {
     image:
-      'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1800&q=85',
-    eyebrow: 'A QUIET PLACE TO STUDY',
-    title: 'YOUR FOCUS.',
-    highlight: 'YOUR SPACE.',
+      'https://sujalfrand66-arch.github.io/shanti-library/images/hero.png',
+
+    eyebrow: 'A PEACEFUL PLACE TO STUDY',
+    title: 'FOCUS.',
+    highlight: 'WITHOUT DISTRACTION.',
     text:
-      'A peaceful reading room designed for students who want to study without distractions.',
+      'Study comfortably in a peaceful environment where every student has their own dedicated space.',
   },
+
   {
     image:
-      'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1800&q=85',
-    eyebrow: 'BUILT FOR STUDENTS',
-    title: 'STUDY BETTER.',
-    highlight: 'STAY FOCUSED.',
+      'https://sujalfrand66-arch.github.io/shanti-library/images/gallery-4.png',
+
+    eyebrow: 'YOUR OWN STUDY SPACE',
+    title: 'YOUR TABLE.',
+    highlight: 'YOUR FOCUS.',
     text:
-      'Comfortable seating, a calm environment and everything you need for your daily study routine.',
+      'Enjoy a comfortable and peaceful study environment designed for long hours of focused learning.',
   },
+
   {
     image:
-      'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1800&q=85',
-    eyebrow: 'YOUR DAILY STUDY ROUTINE',
-    title: 'ONE PLACE.',
-    highlight: 'MORE PROGRESS.',
+      'https://images.pexels.com/photos/33745700/pexels-photo-33745700.jpeg?auto=compress&cs=tinysrgb&w=2400',
+
+    eyebrow: 'BUILT FOR SERIOUS STUDY',
+    title: 'STUDY MORE.',
+    highlight: 'DISTRACT LESS.',
     text:
-      'Choose your plan, reserve your seat and build a consistent study routine.',
+      'A modern reading environment where students can concentrate on their studies without distractions.',
   },
+
   {
     image:
-      'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1800&q=85',
-    eyebrow: 'WELCOME TO STUDY LIBRARY',
-    title: 'MAKE TIME.',
-    highlight: 'MAKE PROGRESS.',
+      'https://images.pexels.com/photos/4903651/pexels-photo-4903651.jpeg?auto=compress&cs=tinysrgb&w=2400',
+
+    eyebrow: 'COMFORT • FOCUS • PRODUCTIVITY',
+    title: 'A BETTER PLACE',
+    highlight: 'TO STUDY.',
     text:
-      'Turn your study hours into productive hours with a dedicated space made for learning.',
+      'Clean, comfortable and peaceful study spaces created to help you make the most of every hour.',
   },
 ]
-
 export default function Home() {
   const { user, loading } = useAuth()
 
@@ -377,46 +383,46 @@ export default function Home() {
 
             <div className="home-feature-grid">
               <FeatureCard
-                icon="🪑"
-                label="STUDY • FOCUS"
-                title="Dedicated Seating"
-                text="Comfortable study spaces designed to help you stay focused."
-              />
+  icon="❄️"
+  label="COMFORT • FOCUS"
+  title="Fully Air-Conditioned Hall"
+  text="Study comfortably for long hours in a clean, peaceful and fully air-conditioned reading hall."
+/>
 
-              <FeatureCard
-                icon="📚"
-                label="LEARN • GROW"
-                title="Study Resources"
-                text="Keep your learning materials and important resources organized."
-              />
+<FeatureCard
+  icon="🪑"
+  label="YOUR • SPACE"
+  title="Dedicated Seating"
+  text="Enjoy your own dedicated study seat with a comfortable environment designed for focused learning."
+/>
 
-              <FeatureCard
-                icon="📅"
-                label="TRACK • MANAGE"
-                title="Attendance"
-                text="Keep track of your daily attendance and study routine."
-              />
+<FeatureCard
+  icon="📱"
+  label="SMART • STUDY"
+  title="Student Mobile App"
+  text="Manage your library activities, check updates and maintain your daily study streak directly from your phone."
+/>
 
-              <FeatureCard
-                icon="🔔"
-                label="UPDATE • INFORM"
-                title="Notices"
-                text="Stay updated with important announcements from the library."
-              />
+<FeatureCard
+  icon="⚡"
+  label="ONLINE • ANYTIME"
+  title="Everything Online"
+  text="Manage membership, attendance, seat requests and other services online without needing to visit the owner."
+/>
 
-              <FeatureCard
-                icon="💬"
-                label="CONNECT • COMMUNICATE"
-                title="Feedback"
-                text="Share your suggestions and communicate with the library team."
-              />
+<FeatureCard
+  icon="📶"
+  label="CONNECTED • PRODUCTIVE"
+  title="Wi-Fi & Charging"
+  text="Stay connected with high-speed Wi-Fi and convenient charging points for your study devices."
+/>
 
-              <FeatureCard
-                icon="👤"
-                label="YOUR • ACCOUNT"
-                title="Student Profile"
-                text="Manage your account, membership and personal information."
-              />
+<FeatureCard
+  icon="🛡️"
+  label="SAFE • CLEAN • RELIABLE"
+  title="Safe & Comfortable"
+  text="Study in a clean and hygienic environment with CCTV security, proper lighting, drinking water and power backup."
+/>
             </div>
           </div>
         </section>

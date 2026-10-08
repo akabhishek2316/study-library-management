@@ -7,7 +7,6 @@ import { api, fmtDate } from '../api'
 const STATUS_FILTERS = [
   'all',
   'pending',
-  'approved',
   'rejected',
 ]
 
@@ -21,11 +20,18 @@ export default function AdmissionRequests() {
     useState(null)
 
   const load = () =>
-    api('/admissions')
-      .then(setList)
-      .catch((e) =>
-        setError(e.message)
+  api('/admissions')
+    .then((data) =>
+      setList(
+        data.filter(
+          (request) =>
+            request.status !== 'approved'
+        )
       )
+    )
+    .catch((e) =>
+      setError(e.message)
+    )
 
   useEffect(() => {
     load()
@@ -33,7 +39,9 @@ export default function AdmissionRequests() {
 
   const review = async (
     request,
-    action
+    action,
+    hall,
+    seat
   ) => {
     const key = `${request._id}-${action}`
 
@@ -45,16 +53,27 @@ export default function AdmissionRequests() {
     }))
 
     try {
+      const body =
+        action === 'approve'
+          ? {
+              hall,
+              seat,
+            }
+          : undefined
+
       await api(
         `/admissions/${request._id}/${action}`,
         {
           method: 'PUT',
+          ...(body && {
+            body,
+          }),
         }
       )
 
       setSelectedRequest(null)
 
-      load()
+      await load()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -65,16 +84,33 @@ export default function AdmissionRequests() {
     }
   }
 
-  const approve = async (request) => {
+  const approve = async (
+    request,
+    hall,
+    seat
+  ) => {
+    if (!hall || !seat) {
+      setError(
+        'Please assign a hall and seat before approving this admission.'
+      )
+
+      return
+    }
+
     if (
       !confirm(
-        `Approve admission for ${request.user?.name}?`
+        `Approve admission for ${request.user?.name} with ${hall.name}, Seat ${seat.number}?`
       )
     ) {
       return
     }
 
-    await review(request, 'approve')
+    await review(
+      request,
+      'approve',
+      hall._id,
+      seat._id
+    )
   }
 
   const reject = async (request) => {
@@ -86,38 +122,50 @@ export default function AdmissionRequests() {
       return
     }
 
-    await review(request, 'reject')
-  }
-
-const filteredList = list.filter(
-  (request) => {
-    if (request.status !== 'pending') {
-      return false
-    }
-
-    const search =
-      q.trim().toLowerCase()
-
-    if (!search) {
-      return true
-    }
-
-    const name =
-      request.user?.name || ''
-
-    const email =
-      request.user?.email || ''
-
-    const phone =
-      request.user?.phone || ''
-
-    return (
-      name.toLowerCase().includes(search) ||
-      email.toLowerCase().includes(search) ||
-      phone.toLowerCase().includes(search)
+    await review(
+      request,
+      'reject'
     )
   }
-)
+
+  const filteredList = list.filter(
+    (request) => {
+      if (
+        status !== 'all' &&
+        request.status !== status
+      ) {
+        return false
+      }
+
+      const search =
+        q.trim().toLowerCase()
+
+      if (!search) {
+        return true
+      }
+
+      const name =
+        request.user?.name || ''
+
+      const email =
+        request.user?.email || ''
+
+      const phone =
+        request.user?.phone || ''
+
+      return (
+        name
+          .toLowerCase()
+          .includes(search) ||
+        email
+          .toLowerCase()
+          .includes(search) ||
+        phone
+          .toLowerCase()
+          .includes(search)
+      )
+    }
+  )
 
   return (
     <>
@@ -135,7 +183,9 @@ const filteredList = list.filter(
             <button
               key={item}
               className={
-                status === item ? 'on' : ''
+                status === item
+                  ? 'on'
+                  : ''
               }
               onClick={() =>
                 setStatus(item)
@@ -162,6 +212,7 @@ const filteredList = list.filter(
                 <th>Applicant</th>
                 <th>Phone</th>
                 <th>Plan</th>
+                <th>Requested Hall</th>
                 <th>Requested</th>
                 <th>Status</th>
                 <th></th>
@@ -215,6 +266,12 @@ const filteredList = list.filter(
                     </td>
 
                     <td>
+                      {request
+                        .preferredHall
+                        ?.name || '-'}
+                    </td>
+
+                    <td>
                       {fmtDate(
                         request.createdAt
                       )}
@@ -236,64 +293,39 @@ const filteredList = list.filter(
                       </span>
                     </td>
 
-                    <td>
-                      <div className="admission-actions">
-                        <button
-                          className="admission-view-button"
-                          onClick={() =>
-                            setSelectedRequest(
-                              request
-                            )
-                          }
-                        >
-                          View & Verify
-                        </button>
+ <td>
+  <div className="admission-actions">
+    <button
+      className="admission-view-button"
+      onClick={() =>
+        setSelectedRequest(request)
+      }
+    >
+      View & Assign
+    </button>
 
-                        {request.status ===
-                          'pending' && (
-                          <>
-                            <button
-                              disabled={
-                                busy[
-                                  `${request._id}-approve`
-                                ]
-                              }
-                              onClick={() =>
-                                approve(
-                                  request
-                                )
-                              }
-                            >
-                              {busy[
-                                `${request._id}-approve`
-                              ]
-                                ? 'Approving...'
-                                : 'Approve'}
-                            </button>
-
-                            <button
-                              className="ghost danger"
-                              disabled={
-                                busy[
-                                  `${request._id}-reject`
-                                ]
-                              }
-                              onClick={() =>
-                                reject(
-                                  request
-                                )
-                              }
-                            >
-                              {busy[
-                                `${request._id}-reject`
-                              ]
-                                ? 'Rejecting...'
-                                : 'Reject'}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+    {request.status ===
+      'pending' && (
+      <button
+        className="ghost danger"
+        disabled={
+          busy[
+            `${request._id}-reject`
+          ]
+        }
+        onClick={() =>
+          reject(request)
+        }
+      >
+        {busy[
+          `${request._id}-reject`
+        ]
+          ? 'Rejecting...'
+          : 'Reject'}
+      </button>
+    )}
+  </div>
+</td>
                   </tr>
                 )
               )}
@@ -302,7 +334,7 @@ const filteredList = list.filter(
                 0 && (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="7"
                     className="muted"
                   >
                     No admission requests
@@ -339,7 +371,29 @@ function AdmissionProfile({
 }) {
   const user = request.user || {}
   const plan = request.plan || {}
-  const seat = request.seat || {}
+  const preferredHall =
+    request.preferredHall || {}
+
+  const [halls, setHalls] = useState([])
+
+  const [selectedHall, setSelectedHall] =
+    useState(
+      preferredHall._id || ''
+    )
+
+  const [seats, setSeats] = useState([])
+
+  const [selectedSeat, setSelectedSeat] =
+    useState('')
+
+  const [hallLoading, setHallLoading] =
+    useState(false)
+
+  const [seatLoading, setSeatLoading] =
+    useState(false)
+
+  const [assignmentError, setAssignmentError] =
+    useState('')
 
   const approveBusy =
     busy[`${request._id}-approve`]
@@ -347,12 +401,160 @@ function AdmissionProfile({
   const rejectBusy =
     busy[`${request._id}-reject`]
 
+  // Load all active halls
+  useEffect(() => {
+    if (
+      request.status !==
+      'pending'
+    ) {
+      setHalls([])
+      return
+    }
+
+    if (!plan._id) {
+      setAssignmentError(
+        'Plan information is not available.'
+      )
+
+      return
+    }
+
+    setHallLoading(true)
+    setAssignmentError('')
+
+    api(
+      `/admissions/available-halls?plan=${encodeURIComponent(
+        plan._id
+      )}`
+    )
+      .then((data) => {
+        const availableHalls =
+          Array.isArray(data)
+            ? data
+            : []
+
+        setHalls(
+          availableHalls
+        )
+
+        const preferred =
+          availableHalls.find(
+            (hall) =>
+              hall._id ===
+              preferredHall._id
+          )
+
+        if (preferred) {
+          setSelectedHall(
+            preferred._id
+          )
+        } else if (
+          availableHalls.length > 0
+        ) {
+          setSelectedHall(
+            availableHalls[0]._id
+          )
+        }
+      })
+      .catch((err) => {
+        setAssignmentError(
+          err.message
+        )
+      })
+      .finally(() => {
+        setHallLoading(false)
+      })
+  }, [
+    request._id,
+    request.status,
+    plan._id,
+    preferredHall._id,
+  ])
+
+  // Load seats whenever selected hall changes
+  useEffect(() => {
+    if (
+      request.status !==
+      'pending'
+    ) {
+      setSeats([])
+      setSelectedSeat('')
+      return
+    }
+
+    if (!selectedHall) {
+      setSeats([])
+      setSelectedSeat('')
+      return
+    }
+
+    setSeatLoading(true)
+    setAssignmentError('')
+    setSelectedSeat('')
+    setSeats([])
+
+    api(
+      `/admissions/${request._id}/available-seats?hall=${encodeURIComponent(
+        selectedHall
+      )}`
+    )
+      .then((data) => {
+        const availableSeats =
+          Array.isArray(data)
+            ? data
+            : data.seats || []
+
+        setSeats(
+          availableSeats
+        )
+      })
+      .catch((err) => {
+        setAssignmentError(
+          err.message
+        )
+      })
+      .finally(() => {
+        setSeatLoading(false)
+      })
+  }, [
+    request._id,
+    request.status,
+    selectedHall,
+  ])
+
+  const selectedHallData =
+    halls.find(
+      (hall) =>
+        hall._id ===
+        selectedHall
+    ) || null
+
+  const selectedSeatData =
+    seats.find(
+      (seat) =>
+        seat._id ===
+        selectedSeat
+    ) || null
+
+  const handleHallChange = (
+    event
+  ) => {
+    setSelectedHall(
+      event.target.value
+    )
+
+    setSelectedSeat('')
+    setSeats([])
+    setAssignmentError('')
+  }
+
   return (
     <div
       className="admission-modal-backdrop"
       onMouseDown={(e) => {
         if (
-          e.target === e.currentTarget
+          e.target ===
+          e.currentTarget
         ) {
           onClose()
         }
@@ -384,12 +586,16 @@ function AdmissionProfile({
               {user.photo?.url ? (
                 <img
                   src={user.photo.url}
-                  alt={user.name || 'Applicant'}
+                  alt={
+                    user.name ||
+                    'Applicant'
+                  }
                 />
               ) : (
                 <span>
                   {(
-                    user.name || 'A'
+                    user.name ||
+                    'A'
                   )
                     .charAt(0)
                     .toUpperCase()}
@@ -470,16 +676,21 @@ function AdmissionProfile({
             <Info
               label="ID Proof Number"
               value={
-                user.idProofNumber || '-'
+                user.idProofNumber ||
+                '-'
               }
             />
 
             <div className="admission-document">
-              <span>ID Proof Document</span>
+              <span>
+                ID Proof Document
+              </span>
 
               {user.idProof?.url ? (
                 <a
-                  href={user.idProof.url}
+                  href={
+                    user.idProof.url
+                  }
                   target="_blank"
                   rel="noreferrer"
                   className="admission-document-link"
@@ -567,7 +778,9 @@ function AdmissionProfile({
 
             <Info
               label="Year / Semester"
-              value={user.yearSemester}
+              value={
+                user.yearSemester
+              }
             />
           </ProfileSection>
 
@@ -598,22 +811,19 @@ function AdmissionProfile({
             />
 
             <Info
-              label="Seat"
+              label="Preferred Hall"
               value={
-                seat.number
-                  ? `Seat ${seat.number}`
-                  : '-'
+                preferredHall.name ||
+                '-'
               }
             />
 
             <Info
-              label="Section"
-              value={seat.section}
-            />
-
-            <Info
-              label="Seat Type"
-              value={seat.type}
+              label="Hall Type"
+              value={
+                preferredHall.type ||
+                '-'
+              }
             />
 
             <Info
@@ -626,11 +836,197 @@ function AdmissionProfile({
             <Info
               label="Message"
               value={
-                request.message || '-'
+                request.message ||
+                '-'
               }
               full
             />
           </ProfileSection>
+
+          {request.status ===
+            'pending' && (
+            <ProfileSection
+              title="Hall & Seat Assignment"
+            >
+              <div className="admission-seat-assignment">
+                <div>
+                  <span className="admission-seat-label">
+                    Student Preferred Hall
+                  </span>
+
+                  <strong>
+                    {preferredHall.name ||
+                      '-'}
+                  </strong>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="admission-hall"
+                    className="admission-seat-label"
+                  >
+                    Assign Hall
+                  </label>
+
+                  {hallLoading ? (
+                    <p>
+                      Loading available
+                      halls...
+                    </p>
+                  ) : (
+                    <select
+                      id="admission-hall"
+                      value={
+                        selectedHall
+                      }
+                      onChange={
+                        handleHallChange
+                      }
+                    >
+                      <option value="">
+                        Select hall
+                      </option>
+
+                      {halls.map(
+                        (hall) => (
+                          <option
+                            key={
+                              hall._id
+                            }
+                            value={
+                              hall._id
+                            }
+                          >
+                            {hall.name}
+                            {hall.type
+                              ? ` · ${hall.type}`
+                              : ''}
+                            {hall.availableSeats !=
+                            null
+                              ? ` · ${hall.availableSeats} available`
+                              : ''}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="admission-seat"
+                    className="admission-seat-label"
+                  >
+                    Assign Seat
+                  </label>
+
+                  {seatLoading ? (
+                    <p>
+                      Loading available
+                      seats...
+                    </p>
+                  ) : (
+                    <select
+                      id="admission-seat"
+                      value={
+                        selectedSeat
+                      }
+                      onChange={(e) =>
+                        setSelectedSeat(
+                          e.target.value
+                        )
+                      }
+                      disabled={
+                        !selectedHall ||
+                        halls.length ===
+                          0
+                      }
+                    >
+                      <option value="">
+                        Select seat
+                      </option>
+
+                      {seats.map(
+                        (seat) => (
+                          <option
+                            key={
+                              seat._id
+                            }
+                            value={
+                              seat._id
+                            }
+                          >
+                            Seat{' '}
+                            {
+                              seat.number
+                            }
+
+                            {seat.section
+                              ? ` · ${seat.section}`
+                              : ''}
+
+                            {seat.type
+                              ? ` · ${seat.type}`
+                              : ''}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  )}
+                </div>
+
+                {selectedHallData && (
+                  <div className="admission-assignment-summary">
+                    <span>
+                      Final Assignment
+                    </span>
+
+                    <strong>
+                      {
+                        selectedHallData.name
+                      }{' '}
+                      · Seat{' '}
+                      {selectedSeatData
+                        ?.number ||
+                        'Not selected'}
+                    </strong>
+                  </div>
+                )}
+
+                {assignmentError && (
+                  <div className="alert error">
+                    {
+                      assignmentError
+                    }
+                  </div>
+                )}
+
+                {!hallLoading &&
+                  !seatLoading &&
+                  !assignmentError &&
+                  halls.length ===
+                    0 && (
+                    <p className="muted">
+                      No active halls are
+                      available.
+                    </p>
+                  )}
+
+                {!seatLoading &&
+                  !assignmentError &&
+                  selectedHall &&
+                  seats.length ===
+                    0 && (
+                    <p className="muted">
+                      No available seats
+                      found in this hall for
+                      the selected plan and
+                      shift.
+                    </p>
+                  )}
+              </div>
+            </ProfileSection>
+          )}
         </div>
 
         {request.status ===
@@ -638,7 +1034,9 @@ function AdmissionProfile({
           <div className="admission-modal-footer">
             <button
               className="ghost danger"
-              disabled={rejectBusy}
+              disabled={
+                rejectBusy
+              }
               onClick={() =>
                 onReject(request)
               }
@@ -649,9 +1047,19 @@ function AdmissionProfile({
             </button>
 
             <button
-              disabled={approveBusy}
+              disabled={
+                approveBusy ||
+                !selectedHall ||
+                !selectedSeat ||
+                hallLoading ||
+                seatLoading
+              }
               onClick={() =>
-                onApprove(request)
+                onApprove(
+                  request,
+                  selectedHallData,
+                  selectedSeatData
+                )
               }
             >
               {approveBusy
@@ -694,7 +1102,10 @@ function Info({
       }`}
     >
       <span>{label}</span>
-      <strong>{value || '-'}</strong>
+
+      <strong>
+        {value || '-'}
+      </strong>
     </div>
   )
 }

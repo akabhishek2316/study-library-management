@@ -38,11 +38,11 @@ export default function Students() {
   const [status, setStatus] = useState('active')
 
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    emergencyContact: '',
-  })
+  name: '',
+  email: '',
+  phone: '',
+  gender: '',
+})
 
   const [error, setError] = useState('')
   const [created, setCreated] = useState(null)
@@ -401,42 +401,61 @@ export default function Students() {
       )}
 
       <form
-        className="card row-form"
-        onSubmit={add}
-      >
-        <input
-          placeholder="Full name *"
-          value={form.name}
-          onChange={set('name')}
-          required
-        />
+  className="card row-form"
+  onSubmit={add}
+>
+  <input
+    placeholder="Full name *"
+    value={form.name}
+    onChange={set('name')}
+    required
+  />
 
-        <input
-          placeholder="Email *"
-          type="email"
-          value={form.email}
-          onChange={set('email')}
-          required
-        />
+  <input
+    placeholder="Email *"
+    type="email"
+    value={form.email}
+    onChange={set('email')}
+    required
+  />
 
-        <input
-          placeholder="Phone"
-          value={form.phone}
-          onChange={set('phone')}
-        />
+  <input
+    placeholder="Phone *"
+    value={form.phone}
+    onChange={set('phone')}
+    required
+  />
 
-        <input
-          placeholder="Emergency contact"
-          value={form.emergencyContact}
-          onChange={set(
-            'emergencyContact'
-          )}
-        />
+  <select
+    value={form.gender}
+    onChange={set('gender')}
+    required
+  >
+    <option value="">
+      Select gender
+    </option>
 
-        <button>
-          Add student
-        </button>
-      </form>
+    <option value="Male">
+      Male
+    </option>
+
+    <option value="Female">
+      Female
+    </option>
+
+    <option value="Other">
+      Other
+    </option>
+
+    <option value="Prefer not to say">
+      Prefer not to say
+    </option>
+  </select>
+
+  <button>
+    Add student
+  </button>
+</form>
 
       <div className="card">
         <div className="tabs">
@@ -504,24 +523,24 @@ export default function Students() {
                     {s.phone || '-'}
                   </td>
 
-                  <td>
-                    {s.current ? (
-                      <>
-                        Seat{' '}
-                        {s.current.seat?.number}
+                 <td>
+  {s.current ? (
+    <>
+      {s.current.hall?.name || '-'} · Seat{' '}
+      {s.current.seat?.number || '-'}
 
-                        <small>
-                          {s.current.plan?.name}{' '}
-                          ·{' '}
-                          {s.current.shift?.name}
-                        </small>
-                      </>
-                    ) : (
-                      <span className="badge gray">
-                        No seat
-                      </span>
-                    )}
-                  </td>
+      <small>
+        {s.current.plan?.name}{' '}
+        ·{' '}
+        {s.current.shift?.name}
+      </small>
+    </>
+  ) : (
+    <span className="badge gray">
+      No membership
+    </span>
+  )}
+</td>
 
                   <td>
                     {s.current
@@ -833,12 +852,20 @@ export default function Students() {
                   />
 
                   <Info
-                    label="Seat"
-                    value={
-                      selectedStudent.current
-                        ?.seat?.number
-                    }
-                  />
+  label="Hall"
+  value={
+    selectedStudent.current
+      ?.hall?.name
+  }
+/>
+
+<Info
+  label="Seat"
+  value={
+    selectedStudent.current
+      ?.seat?.number
+  }
+/>
 
                   <Info
                     label="Shift"

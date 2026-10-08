@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, fmtDate } from '../api'
-import "./SeatChangeRequests.css"
+import './SeatChangeRequests.css'
 
 const STATUS_FILTERS = [
   'pending',
@@ -43,7 +43,10 @@ export default function SeatChangeRequests() {
     load()
   }, [status])
 
-  const review = async (request, nextStatus) => {
+  const review = async (
+    request,
+    nextStatus
+  ) => {
     setError('')
     setOk('')
     setSaving(true)
@@ -84,7 +87,8 @@ export default function SeatChangeRequests() {
           <h1>Seat Change Requests</h1>
 
           <p className="muted">
-            Review student requests to change their seats.
+            Review student requests to change
+            their seats.
           </p>
         </div>
 
@@ -131,8 +135,8 @@ export default function SeatChangeRequests() {
               <thead>
                 <tr>
                   <th>Student</th>
-                  <th>Current Seat</th>
-                  <th>Requested Seat</th>
+                  <th>Current Hall / Seat</th>
+                  <th>Requested Hall / Seat</th>
                   <th>Dates</th>
                   <th>Reason</th>
                   <th>Status</th>
@@ -154,22 +158,42 @@ export default function SeatChangeRequests() {
                     </td>
 
                     <td>
-                      {request.currentSeat?.number}
+                      <b>
+                        {request.currentSeat
+                          ?.hall?.name || '-'}
+                      </b>
+
+                      <small>
+                        Seat{' '}
+                        {request.currentSeat
+                          ?.number || '-'}
+                      </small>
                     </td>
 
                     <td>
-                      {request.requestedSeat?.number}
+                      <b>
+                        {request.requestedSeat
+                          ?.hall?.name || '-'}
+                      </b>
+
+                      <small>
+                        Seat{' '}
+                        {request.requestedSeat
+                          ?.number || '-'}
+                      </small>
                     </td>
 
                     <td>
                       {request.membership ? (
                         <>
                           {fmtDate(
-                            request.membership.startDate
+                            request.membership
+                              .startDate
                           )}
                           {' → '}
                           {fmtDate(
-                            request.membership.endDate
+                            request.membership
+                              .endDate
                           )}
                         </>
                       ) : (
@@ -191,7 +215,9 @@ export default function SeatChangeRequests() {
                         <div className="row-form">
                           <button
                             onClick={() => {
-                              setSelected(request)
+                              setSelected(
+                                request
+                              )
                               setMessage('')
                             }}
                           >
@@ -229,7 +255,8 @@ export default function SeatChangeRequests() {
                 </h2>
 
                 <p className="muted">
-                  Review the requested seat change.
+                  Review the requested seat
+                  change.
                 </p>
               </div>
 
@@ -266,11 +293,34 @@ export default function SeatChangeRequests() {
 
               <div>
                 <span className="muted">
+                  Current Hall
+                </span>
+
+                <b>
+                  {selected.currentSeat
+                    ?.hall?.name || '-'}
+                </b>
+              </div>
+
+              <div>
+                <span className="muted">
                   Current Seat
                 </span>
 
                 <b>
-                  {selected.currentSeat?.number}
+                  {selected.currentSeat
+                    ?.number || '-'}
+                </b>
+              </div>
+
+              <div>
+                <span className="muted">
+                  Requested Hall
+                </span>
+
+                <b>
+                  {selected.requestedSeat
+                    ?.hall?.name || '-'}
                 </b>
               </div>
 
@@ -280,7 +330,8 @@ export default function SeatChangeRequests() {
                 </span>
 
                 <b>
-                  {selected.requestedSeat?.number}
+                  {selected.requestedSeat
+                    ?.number || '-'}
                 </b>
               </div>
 
@@ -291,7 +342,8 @@ export default function SeatChangeRequests() {
 
                 <b>
                   {fmtDate(
-                    selected.membership?.startDate
+                    selected.membership
+                      ?.startDate
                   )}
                 </b>
               </div>
@@ -303,7 +355,8 @@ export default function SeatChangeRequests() {
 
                 <b>
                   {fmtDate(
-                    selected.membership?.endDate
+                    selected.membership
+                      ?.endDate
                   )}
                 </b>
               </div>
@@ -320,10 +373,13 @@ export default function SeatChangeRequests() {
 
             <label>
               Admin Message
+
               <textarea
                 value={message}
                 onChange={(e) =>
-                  setMessage(e.target.value)
+                  setMessage(
+                    e.target.value
+                  )
                 }
                 placeholder="Optional message to the student"
                 rows="4"

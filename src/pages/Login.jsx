@@ -34,25 +34,48 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   if (user) {
-    return <Navigate to="/" replace />
+  if (user.role === 'student') {
+    return (
+      <Navigate
+        to="/student"
+        replace
+      />
+    )
   }
+
+  return (
+    <Navigate
+      to="/"
+      replace
+    />
+  )
+}
 
   const submit = async (e) => {
-    e.preventDefault()
-    setBusy(true)
-    setError('')
+  e.preventDefault()
+  setBusy(true)
+  setError('')
 
-    try {
-      await login(email, password)
+  try {
+    const loggedInUser = await login(
+      email,
+      password
+    )
+
+    if (loggedInUser.role === 'student') {
+      navigate('/student')
+    } else {
       navigate('/')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setBusy(false)
     }
+  } catch (err) {
+    setError(err.message)
+  } finally {
+    setBusy(false)
   }
+}
 
   return (
     <div className="auth">

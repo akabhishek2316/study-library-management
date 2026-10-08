@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { api, fmtDate } from '../api'
 import './ChangeSeat.css'
 
 export default function ChangeSeat() {
-  const navigate = useNavigate()
-
   const [data, setData] = useState(null)
   const [seats, setSeats] = useState([])
   const [seatId, setSeatId] = useState('')
@@ -32,7 +30,8 @@ export default function ChangeSeat() {
         requests,
       })
 
-      const current = membershipData.current
+      const current =
+        membershipData.current
 
       if (!current) {
         setSeats([])
@@ -52,11 +51,11 @@ export default function ChangeSeat() {
 
       setSeats(available)
 
-      if (available.length > 0) {
-        setSeatId(available[0]._id)
-      } else {
-        setSeatId('')
-      }
+      setSeatId(
+        available.length > 0
+          ? available[0]._id
+          : ''
+      )
     } catch (err) {
       setError(err.message)
     } finally {
@@ -90,24 +89,42 @@ export default function ChangeSeat() {
   const pendingRequest = requests.find(
     (request) =>
       request.status === 'pending' &&
-      request.membership?._id === membership?._id
+      request.membership?._id ===
+        membership?._id
+  )
+
+  const groupedSeats = seats.reduce(
+    (groups, seat) => {
+      const hallName =
+        seat.hall?.name || 'Other Hall'
+
+      if (!groups[hallName]) {
+        groups[hallName] = []
+      }
+
+      groups[hallName].push(seat)
+
+      return groups
+    },
+    {}
   )
 
   if (!membership) {
     return (
       <div className="page-head">
-  <div>
-    <h1>Change Seat</h1>
+        <div>
+          <h1>Change Seat</h1>
 
-    <p className="muted">
-      Request a different seat for your current membership.
-    </p>
+          <p className="muted">
+            Request a different seat for your
+            current membership.
+          </p>
 
-    <Link to="/student">
-      Back to Dashboard
-    </Link>
-  </div>
-</div>
+          <Link to="/student">
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
     )
   }
 
@@ -118,27 +135,34 @@ export default function ChangeSeat() {
     setOk('')
 
     if (!seatId) {
-      setError('Please select a seat.')
+      setError(
+        'Please select a new hall and seat.'
+      )
       return
     }
 
     setSubmitting(true)
 
     try {
-      await api('/seat-change-requests', {
-        method: 'POST',
-        body: {
-          membershipId: membership._id,
-          seatId,
-          reason,
-        },
-      })
+      await api(
+        '/seat-change-requests',
+        {
+          method: 'POST',
+          body: {
+            membershipId:
+              membership._id,
+            seatId,
+            reason,
+          },
+        }
+      )
 
       setOk(
         'Seat change request submitted. Please wait for admin approval.'
       )
 
       setReason('')
+
       await load()
     } catch (err) {
       setError(err.message)
@@ -154,7 +178,8 @@ export default function ChangeSeat() {
           <h1>Change Seat</h1>
 
           <p className="muted">
-            Request a different seat for your current membership.
+            Request a different seat for your
+            current membership.
           </p>
         </div>
 
@@ -178,14 +203,26 @@ export default function ChangeSeat() {
       <div className="card">
         <h3>Current Membership</h3>
 
-        <div className="grid-3">
+        <div className="grid-4">
+          <div>
+            <span className="muted">
+              Current Hall
+            </span>
+
+            <b>
+              {membership.hall?.name ||
+                '-'}
+            </b>
+          </div>
+
           <div>
             <span className="muted">
               Current Seat
             </span>
 
             <b>
-              {membership.seat?.number}
+              {membership.seat?.number ||
+                '-'}
             </b>
           </div>
 
@@ -195,7 +232,8 @@ export default function ChangeSeat() {
             </span>
 
             <b>
-              {membership.plan?.name}
+              {membership.plan?.name ||
+                '-'}
             </b>
           </div>
 
@@ -205,15 +243,21 @@ export default function ChangeSeat() {
             </span>
 
             <b>
-              {membership.shift?.name}
+              {membership.shift?.name ||
+                '-'}
             </b>
           </div>
         </div>
 
         <p className="muted">
-          Valid from {fmtDate(membership.startDate)}
-          {' '}to{' '}
-          {fmtDate(membership.endDate)}
+          Valid from{' '}
+          {fmtDate(
+            membership.startDate
+          )}{' '}
+          to{' '}
+          {fmtDate(
+            membership.endDate
+          )}
         </p>
       </div>
 
@@ -222,20 +266,33 @@ export default function ChangeSeat() {
           <h3>Request Pending</h3>
 
           <p>
-            You already have a pending request to change
-            your seat from{' '}
+            You already have a pending
+            request to change your seat
+            from{' '}
             <b>
-              {pendingRequest.currentSeat?.number}
+              {pendingRequest.currentSeat
+                ?.hall?.name || '-'}
+              {' · '}
+              Seat{' '}
+              {pendingRequest.currentSeat
+                ?.number || '-'}
             </b>{' '}
             to{' '}
             <b>
-              {pendingRequest.requestedSeat?.number}
-            </b>.
+              {pendingRequest.requestedSeat
+                ?.hall?.name || '-'}
+              {' · '}
+              Seat{' '}
+              {pendingRequest
+                .requestedSeat?.number ||
+                '-'}
+            </b>
+            .
           </p>
 
           <p className="muted">
-            Please wait for the library admin to review
-            your request.
+            Please wait for the library
+            admin to review your request.
           </p>
         </div>
       ) : (
@@ -247,47 +304,80 @@ export default function ChangeSeat() {
 
           {seats.length === 0 ? (
             <p className="muted">
-              No other seats are currently available for
-              your membership dates and shift.
+              No other seats are currently
+              available for your membership
+              dates and shift.
             </p>
           ) : (
             <>
               <label>
-                New Seat
+                New Hall & Seat
+
                 <select
                   value={seatId}
                   onChange={(e) =>
-                    setSeatId(e.target.value)
+                    setSeatId(
+                      e.target.value
+                    )
                   }
                   required
                 >
                   <option value="">
-                    Select a seat
+                    Select a hall and seat
                   </option>
 
-                  {seats.map((seat) => (
-                    <option
-                      key={seat._id}
-                      value={seat._id}
-                    >
-                      Seat {seat.number}
-                      {seat.section
-                        ? ` · ${seat.section}`
-                        : ''}
-                      {seat.type
-                        ? ` · ${seat.type}`
-                        : ''}
-                    </option>
-                  ))}
+                  {Object.entries(
+                    groupedSeats
+                  ).map(
+                    ([
+                      hallName,
+                      hallSeats,
+                    ]) => (
+                      <optgroup
+                        key={hallName}
+                        label={hallName}
+                      >
+                        {hallSeats.map(
+                          (seat) => (
+                            <option
+                              key={seat._id}
+                              value={
+                                seat._id
+                              }
+                            >
+                              Seat{' '}
+                              {seat.number}
+                              {seat.section
+                                ? ` · Section ${seat.section}`
+                                : ''}
+                              {seat.type
+                                ? ` · ${seat.type}`
+                                : ''}
+                            </option>
+                          )
+                        )}
+                      </optgroup>
+                    )
+                  )}
                 </select>
               </label>
 
+              <p className="muted">
+                Available seats are grouped
+                by hall. Select the hall first,
+                then choose your preferred
+                seat.
+              </p>
+
               <label>
                 Reason
+
                 <textarea
                   value={reason}
                   onChange={(e) =>
-                    setReason(e.target.value)
+                    setReason(
+                      e.target.value
+                    )
                   }
                   placeholder="Optional reason for changing your seat"
                   rows="4"
@@ -296,8 +386,9 @@ export default function ChangeSeat() {
               </label>
 
               <p className="muted">
-                Your request will be reviewed by the
-                library admin. Your current seat will remain
+                Your request will be reviewed
+                by the library admin. Your
+                current seat will remain
                 unchanged until approval.
               </p>
 
@@ -322,38 +413,73 @@ export default function ChangeSeat() {
             <table>
               <thead>
                 <tr>
-                  <th>Current Seat</th>
-                  <th>Requested Seat</th>
+                  <th>
+                    Current Hall / Seat
+                  </th>
+
+                  <th>
+                    Requested Hall / Seat
+                  </th>
+
                   <th>Reason</th>
+
                   <th>Status</th>
+
                   <th>Date</th>
                 </tr>
               </thead>
 
               <tbody>
-                {requests.map((request) => (
-                  <tr key={request._id}>
-                    <td>
-                      {request.currentSeat?.number}
-                    </td>
+                {requests.map(
+                  (request) => (
+                    <tr
+                      key={
+                        request._id
+                      }
+                    >
+                      <td>
+                        {request
+                          .currentSeat
+                          ?.hall?.name ||
+                          '-'}
+                        {' · '}
+                        Seat{' '}
+                        {request
+                          .currentSeat
+                          ?.number ||
+                          '-'}
+                      </td>
 
-                    <td>
-                      {request.requestedSeat?.number}
-                    </td>
+                      <td>
+                        {request
+                          .requestedSeat
+                          ?.hall?.name ||
+                          '-'}
+                        {' · '}
+                        Seat{' '}
+                        {request
+                          .requestedSeat
+                          ?.number ||
+                          '-'}
+                      </td>
 
-                    <td>
-                      {request.reason || '-'}
-                    </td>
+                      <td>
+                        {request.reason ||
+                          '-'}
+                      </td>
 
-                    <td>
-                      {request.status}
-                    </td>
+                      <td>
+                        {request.status}
+                      </td>
 
-                    <td>
-                      {fmtDate(request.createdAt)}
-                    </td>
-                  </tr>
-                ))}
+                      <td>
+                        {fmtDate(
+                          request.createdAt
+                        )}
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>

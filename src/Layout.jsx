@@ -28,7 +28,6 @@ const isInstalled = () =>
   window.navigator.standalone
 
 // [path, label, icon, color, exact?]
-// (the color tints the icon in the menu)
 const ADMIN = [
   [
     '/admin',
@@ -44,11 +43,11 @@ const ADMIN = [
     '#a78bfa',
   ],
   [
-  '/admin/admissions',
-  'Admission Requests',
-  'admission',
-  '#f59e0b',
-],
+    '/admin/admissions',
+    'Admission Requests',
+    'admission',
+    '#f59e0b',
+  ],
   [
     '/admin/seats',
     'Seats',
@@ -62,11 +61,11 @@ const ADMIN = [
     '#818cf8',
   ],
   [
-  '/admin/seat-change-requests',
-  'Seat Change Requests',
-  'swap',
-  '#22d3ee',
-],
+    '/admin/seat-change-requests',
+    'Seat Change Requests',
+    'swap',
+    '#22d3ee',
+  ],
   [
     '/admin/payments',
     'Payments',
@@ -148,9 +147,15 @@ const STUDENT = [
   ],
 ]
 
+// Pending/rejected students ke liye
+// ye pages visually locked rahenge.
+const LOCKED_STUDENT_PATHS = new Set([
+  '/student/attendance',
+  '/student/notices',
+  '/student/feedback',
+])
+
 // Phones show tables as cards.
-// This copies each column heading onto its cells (data-label)
-// so the CSS can print it.
 function labelTables(root) {
   root
     .querySelectorAll('table')
@@ -234,6 +239,11 @@ export default function Layout({ admin }) {
     ? '/admin'
     : '/student'
 
+  const studentLocked =
+    !admin &&
+    user.admissionStatus !==
+      'approved'
+
   const current = [...links]
     .sort(
       (a, b) =>
@@ -301,7 +311,6 @@ export default function Layout({ admin }) {
       )
   }, [])
 
-  // thin loading bar at the top while the app is talking to the server
   useEffect(() => {
     const on = (e) =>
       setBusy(e.detail > 0)
@@ -352,40 +361,40 @@ export default function Layout({ admin }) {
   }, [])
 
   useEffect(() => {
-  const load = () =>
-    api(
-      '/notifications/unread-count'
-    )
-      .then((d) =>
-        setUnread(d.unread)
+    const load = () =>
+      api(
+        '/notifications/unread-count'
       )
-      .catch(() => {})
+        .then((d) =>
+          setUnread(d.unread)
+        )
+        .catch(() => {})
 
-  load()
-
-  const onUpdated = () => {
     load()
-  }
 
-  window.addEventListener(
-    'notifications-updated',
-    onUpdated
-  )
+    const onUpdated = () => {
+      load()
+    }
 
-  const t = setInterval(
-    load,
-    60000
-  )
-
-  return () => {
-    clearInterval(t)
-
-    window.removeEventListener(
+    window.addEventListener(
       'notifications-updated',
       onUpdated
     )
-  }
-}, [loc.pathname])
+
+    const t = setInterval(
+      load,
+      60000
+    )
+
+    return () => {
+      clearInterval(t)
+
+      window.removeEventListener(
+        'notifications-updated',
+        onUpdated
+      )
+    }
+  }, [loc.pathname])
 
   useEffect(() => {
     const h = (e) => {
@@ -414,30 +423,69 @@ export default function Layout({ admin }) {
     setMenu(false)
   }
 
+  const isLocked = (to) =>
+    !admin &&
+    studentLocked &&
+    LOCKED_STUDENT_PATHS.has(to)
+
   const Item = ([
     to,
     label,
     icon,
     color,
     end,
-  ]) => (
-    <NavLink
-      key={to}
-      to={to}
-      end={end}
-      className="nav-item"
-      style={{ '--c': color }}
-    >
-      <span className="ico">
-        <Icon
-          name={icon}
-          size={18}
-        />
-      </span>
+  ]) => {
+    const locked = isLocked(to)
 
-      <span>{label}</span>
-    </NavLink>
-  )
+    if (locked) {
+      return (
+        <div
+          key={to}
+          className="nav-item nav-item-locked"
+          style={{ '--c': color }}
+          aria-disabled="true"
+          title="Available after admission approval"
+        >
+          <span className="ico">
+            <Icon
+              name={icon}
+              size={18}
+            />
+          </span>
+
+          <span className="nav-item-label">
+            {label}
+          </span>
+
+          <span
+            className="nav-lock"
+            aria-hidden="true"
+          >
+            🔒
+          </span>
+        </div>
+      )
+    }
+
+    return (
+      <NavLink
+        key={to}
+        to={to}
+        end={end}
+        className="nav-item"
+        style={{ '--c': color }}
+      >
+        <span className="ico">
+          <Icon
+            name={icon}
+            size={18}
+          />
+        </span>
+
+        <span>{label}</span>
+      </NavLink>
+    )
+  }
 
   return (
     <div
@@ -511,7 +559,28 @@ export default function Layout({ admin }) {
               )}
             </>
           ) : (
-            STUDENT.map(Item)
+            <>
+              {studentLocked && (
+                <div className="student-lock-notice">
+                  <span className="student-lock-icon">
+                    🔒
+                  </span>
+
+                  <div>
+                    <b>
+                      Account under review
+                    </b>
+
+                    <small>
+                      Features unlock after
+                      admission approval.
+                    </small>
+                  </div>
+                </div>
+              )}
+
+              {STUDENT.map(Item)}
+            </>
           )}
         </nav>
       </aside>
@@ -711,22 +780,53 @@ export default function Layout({ admin }) {
               to,
               label,
               icon,
-              ,
+              color,
               end,
-            ]) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-              >
-                <Icon
-                  name={icon}
-                  size={22}
-                />
+            ]) => {
+              const locked =
+                isLocked(to)
 
-                <span>{label}</span>
-              </NavLink>
-            )
+              if (locked) {
+                return (
+                  <div
+                    key={to}
+                    className="nav-bottom-locked"
+                    title="Available after admission approval"
+                  >
+                    <span className="nav-bottom-icon">
+                      <Icon
+                        name={icon}
+                        size={22}
+                      />
+
+                      <span className="nav-bottom-lock">
+                        🔒
+                      </span>
+                    </span>
+
+                    <span>{label}</span>
+                  </div>
+                )
+              }
+
+              return (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  style={{
+                    '--c': color,
+                  }}
+                >
+                  <Icon
+                    name={icon}
+                    size={22}
+                  />
+
+                  <span>{label}</span>
+                </NavLink>
+              )
+            }
           )}
         </nav>
       )}

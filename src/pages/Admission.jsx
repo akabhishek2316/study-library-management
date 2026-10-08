@@ -11,8 +11,10 @@ const emptyForm = {
   phone: '',
   password: '',
 
-  dob: '',
   gender: '',
+  studentType: '',
+
+  dob: '',
 
   idProofType: '',
   idProofNumber: '',
@@ -26,46 +28,35 @@ const emptyForm = {
   emergencyRelation: '',
   emergencyPhone: '',
 
-  studentType: '',
   institution: '',
   course: '',
   year: '',
 
   plan: '',
-  seat: '',
+  preferredHall: '',
   message: ''
 }
 
 const STEPS = [
   {
     number: '01',
-    title: 'Personal Details',
-    text: 'Basic information for your library account.'
+    title: 'Basic Details',
+    text: 'Create your library account with your basic information.'
   },
   {
     number: '02',
-    title: 'Identity Verification',
-    text: 'Information used by administration for verification.'
+    title: 'Membership',
+    text: 'Choose your preferred plan and hall / room.'
   },
   {
     number: '03',
-    title: 'Address Details',
-    text: 'Your current residential address.'
+    title: 'Verification',
+    text: 'Upload your ID proof for admission verification.'
   },
   {
     number: '04',
-    title: 'Emergency Contact',
-    text: 'Someone the library can contact when necessary.'
-  },
-  {
-    number: '05',
-    title: 'Student Information',
-    text: 'Helps us understand your study requirements.'
-  },
-  {
-    number: '06',
-    title: 'Membership',
-    text: 'Select your preferred plan and available seat.'
+    title: 'Additional Details',
+    text: 'Add any additional information if you want.'
   }
 ]
 
@@ -73,7 +64,7 @@ export default function Admission() {
   const [searchParams] = useSearchParams()
 
   const [plans, setPlans] = useState([])
-  const [seats, setSeats] = useState([])
+  const [halls, setHalls] = useState([])
 
   const [form, setForm] = useState(emptyForm)
 
@@ -82,9 +73,14 @@ export default function Admission() {
 
   const [currentStep, setCurrentStep] = useState(0)
 
-  const [loadingPlans, setLoadingPlans] = useState(true)
-  const [loadingSeats, setLoadingSeats] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [loadingPlans, setLoadingPlans] =
+    useState(true)
+
+  const [loadingHalls, setLoadingHalls] =
+    useState(false)
+
+  const [submitting, setSubmitting] =
+    useState(false)
 
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -102,12 +98,16 @@ export default function Admission() {
 
       setPlans(data)
 
-      const queryPlan = searchParams.get('plan')
+      const queryPlan =
+        searchParams.get('plan')
 
       const selectedPlan =
         data.find(
-          (plan) => plan._id === queryPlan
-        )?._id || data[0]?._id || ''
+          (plan) =>
+            plan._id === queryPlan
+        )?._id ||
+        data[0]?._id ||
+        ''
 
       setForm((prev) => ({
         ...prev,
@@ -115,7 +115,7 @@ export default function Admission() {
       }))
 
       if (selectedPlan) {
-        await loadSeats(selectedPlan)
+        await loadHalls(selectedPlan)
       }
     } catch (err) {
       setError(err.message)
@@ -124,38 +124,39 @@ export default function Admission() {
     }
   }
 
-  const loadSeats = async (planId) => {
+  const loadHalls = async (planId) => {
     if (!planId) {
-      setSeats([])
+      setHalls([])
       return
     }
 
     try {
-      setLoadingSeats(true)
+      setLoadingHalls(true)
       setError('')
-      setSeats([])
+      setHalls([])
 
       const data = await api(
-        `/admissions/available-seats?plan=${planId}`
+        `/admissions/available-halls?plan=${planId}`
       )
 
-      setSeats(data)
+      setHalls(data)
 
       setForm((prev) => ({
         ...prev,
-        seat: data[0]?._id || ''
+        preferredHall:
+          data[0]?._id || ''
       }))
     } catch (err) {
-      setSeats([])
+      setHalls([])
 
       setForm((prev) => ({
         ...prev,
-        seat: ''
+        preferredHall: ''
       }))
 
       setError(err.message)
     } finally {
-      setLoadingSeats(false)
+      setLoadingHalls(false)
     }
   }
 
@@ -166,21 +167,27 @@ export default function Admission() {
       ...prev,
       [key]: value,
       ...(key === 'plan'
-        ? { seat: '' }
+        ? {
+            preferredHall: ''
+          }
         : {})
     }))
 
     if (key === 'plan') {
-      await loadSeats(value)
+      await loadHalls(value)
     }
   }
 
   const handlePhoto = (e) => {
-    setPhoto(e.target.files?.[0] || null)
+    setPhoto(
+      e.target.files?.[0] || null
+    )
   }
 
   const handleIdProof = (e) => {
-    setIdProof(e.target.files?.[0] || null)
+    setIdProof(
+      e.target.files?.[0] || null
+    )
   }
 
   const validateStep = () => {
@@ -188,22 +195,30 @@ export default function Admission() {
 
     if (currentStep === 0) {
       if (!form.name.trim()) {
-        setError('Please enter your full name.')
-        return false
-      }
-
-      if (!form.email.trim()) {
-        setError('Please enter your email.')
+        setError(
+          'Please enter your full name.'
+        )
         return false
       }
 
       if (!form.phone.trim()) {
-        setError('Please enter your phone number.')
+        setError(
+          'Please enter your phone number.'
+        )
+        return false
+      }
+
+      if (!form.email.trim()) {
+        setError(
+          'Please enter your email.'
+        )
         return false
       }
 
       if (!form.password) {
-        setError('Please create a password.')
+        setError(
+          'Please create a password.'
+        )
         return false
       }
 
@@ -213,9 +228,43 @@ export default function Admission() {
         )
         return false
       }
+
+      if (!form.gender) {
+        setError(
+          'Please select your gender.'
+        )
+        return false
+      }
+
+      if (!form.studentType) {
+        setError(
+          'Please select your student type.'
+        )
+        return false
+      }
+
+      return true
     }
 
     if (currentStep === 1) {
+      if (!form.plan) {
+        setError(
+          'Please select a plan.'
+        )
+        return false
+      }
+
+      if (!form.preferredHall) {
+        setError(
+          'Please select your preferred hall or room.'
+        )
+        return false
+      }
+
+      return true
+    }
+
+    if (currentStep === 2) {
       if (!form.idProofType) {
         setError(
           'Please select an ID proof type.'
@@ -229,18 +278,102 @@ export default function Admission() {
         )
         return false
       }
+
+      return true
     }
 
-    if (currentStep === 5) {
-      if (!form.plan) {
-        setError('Please select a plan.')
-        return false
-      }
+    return true
+  }
 
-      if (!form.seat) {
-        setError('Please select a seat.')
-        return false
-      }
+  const validateBeforeSubmit = () => {
+    setError('')
+
+    if (!form.name.trim()) {
+      setError(
+        'Please enter your full name.'
+      )
+      setCurrentStep(0)
+      return false
+    }
+
+    if (!form.phone.trim()) {
+      setError(
+        'Please enter your phone number.'
+      )
+      setCurrentStep(0)
+      return false
+    }
+
+    if (!form.email.trim()) {
+      setError(
+        'Please enter your email.'
+      )
+      setCurrentStep(0)
+      return false
+    }
+
+    if (!form.password) {
+      setError(
+        'Please create a password.'
+      )
+      setCurrentStep(0)
+      return false
+    }
+
+    if (form.password.length < 6) {
+      setError(
+        'Password must be at least 6 characters.'
+      )
+      setCurrentStep(0)
+      return false
+    }
+
+    if (!form.gender) {
+      setError(
+        'Please select your gender.'
+      )
+      setCurrentStep(0)
+      return false
+    }
+
+    if (!form.studentType) {
+      setError(
+        'Please select your student type.'
+      )
+      setCurrentStep(0)
+      return false
+    }
+
+    if (!form.plan) {
+      setError(
+        'Please select a plan.'
+      )
+      setCurrentStep(1)
+      return false
+    }
+
+    if (!form.preferredHall) {
+      setError(
+        'Please select your preferred hall or room.'
+      )
+      setCurrentStep(1)
+      return false
+    }
+
+    if (!form.idProofType) {
+      setError(
+        'Please select an ID proof type.'
+      )
+      setCurrentStep(2)
+      return false
+    }
+
+    if (!idProof) {
+      setError(
+        'Please upload your ID proof document.'
+      )
+      setCurrentStep(2)
+      return false
     }
 
     return true
@@ -251,8 +384,13 @@ export default function Admission() {
       return
     }
 
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep((prev) => prev + 1)
+    if (
+      currentStep <
+      STEPS.length - 1
+    ) {
+      setCurrentStep(
+        (prev) => prev + 1
+      )
 
       window.scrollTo({
         top: 0,
@@ -265,7 +403,9 @@ export default function Admission() {
     setError('')
 
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1)
+      setCurrentStep(
+        (prev) => prev - 1
+      )
 
       window.scrollTo({
         top: 0,
@@ -291,7 +431,14 @@ export default function Admission() {
   const submit = async (e) => {
     e.preventDefault()
 
-    if (!validateStep()) {
+    /*
+     * Final validation happens only after
+     * the user clicks Submit.
+     *
+     * Additional Details are completely
+     * optional and are not validated.
+     */
+    if (!validateBeforeSubmit()) {
       return
     }
 
@@ -309,15 +456,24 @@ export default function Admission() {
       )
 
       if (photo) {
-        body.append('photo', photo)
+        body.append(
+          'photo',
+          photo
+        )
       }
 
-      body.append('idProof', idProof)
+      body.append(
+        'idProof',
+        idProof
+      )
 
-      const data = await api('/admissions', {
-        method: 'POST',
-        body
-      })
+      const data = await api(
+        '/admissions',
+        {
+          method: 'POST',
+          body
+        }
+      )
 
       setSuccess(
         data.message ||
@@ -327,7 +483,7 @@ export default function Admission() {
       setForm(emptyForm)
       setPhoto(null)
       setIdProof(null)
-      setSeats([])
+      setHalls([])
       setCurrentStep(0)
 
       const photoInput =
@@ -354,7 +510,8 @@ export default function Admission() {
     }
   }
 
-  const step = STEPS[currentStep]
+  const step =
+    STEPS[currentStep]
 
   return (
     <div className="admission-page">
@@ -385,7 +542,9 @@ export default function Admission() {
       <main className="admission-main">
         <div className="admission-container">
           <div className="admission-intro">
-            <span>STUDY LIBRARY</span>
+            <span>
+              STUDY LIBRARY
+            </span>
 
             <h1>
               Admission
@@ -393,8 +552,9 @@ export default function Admission() {
             </h1>
 
             <p>
-              Complete the form step by step to
-              request admission to the library.
+              Complete the short form
+              step by step to request
+              admission to the library.
             </p>
           </div>
 
@@ -412,39 +572,50 @@ export default function Admission() {
                 </h2>
 
                 <p>
-                  Complete each section one by one.
-                  Your admission request will be
-                  reviewed by the library administration.
+                  Just a few simple steps.
+                  Your admission request
+                  will be reviewed by the
+                  library administration.
                 </p>
 
                 <div className="admission-step-list">
-                  {STEPS.map((item, index) => (
-                    <button
-                      key={item.number}
-                      type="button"
-                      className={
-                        index === currentStep
-                          ? 'active'
-                          : index < currentStep
-                            ? 'completed'
-                            : ''
-                      }
-                      onClick={() =>
-                        goToStep(index)
-                      }
-                      disabled={
-                        index >= currentStep
-                      }
-                    >
-                      <span>
-                        {index < currentStep
-                          ? '✓'
-                          : item.number}
-                      </span>
+                  {STEPS.map(
+                    (item, index) => (
+                      <button
+                        key={
+                          item.number
+                        }
+                        type="button"
+                        className={
+                          index ===
+                          currentStep
+                            ? 'active'
+                            : index <
+                                currentStep
+                              ? 'completed'
+                              : ''
+                        }
+                        onClick={() =>
+                          goToStep(index)
+                        }
+                        disabled={
+                          index >=
+                          currentStep
+                        }
+                      >
+                        <span>
+                          {index <
+                          currentStep
+                            ? '✓'
+                            : item.number}
+                        </span>
 
-                      <p>{item.title}</p>
-                    </button>
-                  ))}
+                        <p>
+                          {item.title}
+                        </p>
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             </aside>
@@ -453,28 +624,41 @@ export default function Admission() {
               <div className="admission-form-top">
                 <div>
                   <div className="admission-current-step">
-                    STEP {step.number} OF 06
+                    STEP{' '}
+                    {step.number}{' '}
+                    OF 04
                   </div>
 
-                  <h2>{step.title}</h2>
+                  <h2>
+                    {step.title}
+                  </h2>
 
-                  <p>{step.text}</p>
+                  <p>
+                    {step.text}
+                  </p>
                 </div>
 
-                <span>Required fields *</span>
+                <span>
+                  Required fields *
+                </span>
               </div>
 
               <div className="admission-progress">
-                {STEPS.map((item, index) => (
-                  <div
-                    key={item.number}
-                    className={
-                      index <= currentStep
-                        ? 'active'
-                        : ''
-                    }
-                  />
-                ))}
+                {STEPS.map(
+                  (item, index) => (
+                    <div
+                      key={
+                        item.number
+                      }
+                      className={
+                        index <=
+                        currentStep
+                          ? 'active'
+                          : ''
+                      }
+                    />
+                  )
+                )}
               </div>
 
               {error && (
@@ -489,7 +673,9 @@ export default function Admission() {
                     Admission request submitted
                   </strong>
 
-                  <p>{success}</p>
+                  <p>
+                    {success}
+                  </p>
 
                   <Link to="/">
                     Return to Home
@@ -500,202 +686,101 @@ export default function Admission() {
               {!success && (
                 <form
                   className="admission-form"
-                  onSubmit={submit}
+                  
                   encType="multipart/form-data"
                 >
                   {currentStep === 0 && (
-                    <>
-                      <div className="admission-grid">
-                        <Field
-                          label="Full name *"
-                          value={form.name}
-                          onChange={set('name')}
-                          placeholder="Enter your full name"
-                          required
-                        />
-
-                        <Field
-                          label="Email *"
-                          type="email"
-                          value={form.email}
-                          onChange={set('email')}
-                          placeholder="Enter your email"
-                          required
-                        />
-
-                        <Field
-                          label="Phone number *"
-                          type="tel"
-                          value={form.phone}
-                          onChange={set('phone')}
-                          placeholder="Enter phone number"
-                          required
-                        />
-
-                        <Field
-                          label="Date of birth"
-                          type="date"
-                          value={form.dob}
-                          onChange={set('dob')}
-                        />
-
-                        <SelectField
-                          label="Gender"
-                          value={form.gender}
-                          onChange={set('gender')}
-                          options={[
-                            ['Male', 'Male'],
-                            ['Female', 'Female'],
-                            ['Other', 'Other'],
-                            [
-                              'Prefer not to say',
-                              'Prefer not to say'
-                            ]
-                          ]}
-                        />
-
-                        <Field
-                          label="Create password *"
-                          type="password"
-                          value={form.password}
-                          onChange={set('password')}
-                          placeholder="Minimum 6 characters"
-                          minLength="6"
-                          required
-                        />
-
-                        <FileField
-                          id="admission-photo"
-                          label="Profile photo"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handlePhoto}
-                          file={photo}
-                          hint="Optional — JPG, PNG or WebP"
-                          full
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {currentStep === 1 && (
                     <div className="admission-grid">
+                      <Field
+                        label="Full name *"
+                        value={
+                          form.name
+                        }
+                        onChange={set(
+                          'name'
+                        )}
+                        placeholder="Enter your full name"
+                        required
+                      />
+
+                      <Field
+                        label="Phone number *"
+                        type="tel"
+                        value={
+                          form.phone
+                        }
+                        onChange={set(
+                          'phone'
+                        )}
+                        placeholder="Enter phone number"
+                        required
+                      />
+
+                      <Field
+                        label="Email *"
+                        type="email"
+                        value={
+                          form.email
+                        }
+                        onChange={set(
+                          'email'
+                        )}
+                        placeholder="Enter your email"
+                        required
+                      />
+
+                      <Field
+                        label="Create password *"
+                        type="password"
+                        value={
+                          form.password
+                        }
+                        onChange={set(
+                          'password'
+                        )}
+                        placeholder="Minimum 6 characters"
+                        minLength="6"
+                        required
+                      />
+
                       <SelectField
-                        label="ID proof type *"
-                        value={form.idProofType}
-                        onChange={set('idProofType')}
+                        label="Gender *"
+                        value={
+                          form.gender
+                        }
+                        onChange={set(
+                          'gender'
+                        )}
                         required
                         options={[
                           [
-                            'Aadhaar',
-                            'Aadhaar Card'
-                          ],
-                          ['PAN', 'PAN Card'],
-                          [
-                            'Driving Licence',
-                            'Driving Licence'
+                            'Male',
+                            'Male'
                           ],
                           [
-                            'Voter ID',
-                            'Voter ID'
+                            'Female',
+                            'Female'
                           ],
-                          ['Other', 'Other']
+                          [
+                            'Other',
+                            'Other'
+                          ],
+                          [
+                            'Prefer not to say',
+                            'Prefer not to say'
+                          ]
                         ]}
                       />
 
-                      <Field
-                        label="ID proof number"
-                        value={form.idProofNumber}
-                        onChange={set(
-                          'idProofNumber'
-                        )}
-                        placeholder="Enter ID number"
-                      />
-
-                      <FileField
-                        id="admission-id-proof"
-                        label="ID proof document *"
-                        accept="image/jpeg,image/png,image/webp,application/pdf"
-                        onChange={handleIdProof}
-                        file={idProof}
-                        hint="Required — JPG, PNG, WebP or PDF, max 5 MB"
-                        full
-                      />
-                    </div>
-                  )}
-
-                  {currentStep === 2 && (
-                    <div className="admission-grid">
-                      <TextAreaField
-                        label="Address"
-                        value={form.address}
-                        onChange={set('address')}
-                        placeholder="Enter your complete address"
-                        full
-                      />
-
-                      <Field
-                        label="City"
-                        value={form.city}
-                        onChange={set('city')}
-                        placeholder="Enter city"
-                      />
-
-                      <Field
-                        label="State"
-                        value={form.state}
-                        onChange={set('state')}
-                        placeholder="Enter state"
-                      />
-
-                      <Field
-                        label="PIN code"
-                        value={form.pincode}
-                        onChange={set('pincode')}
-                        placeholder="Enter PIN code"
-                      />
-                    </div>
-                  )}
-
-                  {currentStep === 3 && (
-                    <div className="admission-grid">
-                      <Field
-                        label="Contact name"
-                        value={form.emergencyName}
-                        onChange={set(
-                          'emergencyName'
-                        )}
-                        placeholder="Emergency contact name"
-                      />
-
-                      <Field
-                        label="Relationship"
-                        value={form.emergencyRelation}
-                        onChange={set(
-                          'emergencyRelation'
-                        )}
-                        placeholder="Father, Mother, Brother..."
-                      />
-
-                      <Field
-                        label="Contact phone"
-                        type="tel"
-                        value={form.emergencyPhone}
-                        onChange={set(
-                          'emergencyPhone'
-                        )}
-                        placeholder="Emergency contact number"
-                      />
-                    </div>
-                  )}
-
-                  {currentStep === 4 && (
-                    <div className="admission-grid">
                       <SelectField
-                        label="Student type"
-                        value={form.studentType}
+                        label="Student type *"
+                        value={
+                          form.studentType
+                        }
                         onChange={set(
                           'studentType'
                         )}
+                        required
                         options={[
                           [
                             'Student',
@@ -705,42 +790,43 @@ export default function Admission() {
                             'Working Professional',
                             'Working Professional'
                           ],
-                          ['Other', 'Other']
+                          [
+                            'Other',
+                            'Other'
+                          ]
                         ]}
                       />
 
-                      <Field
-                        label="College / School / Company"
-                        value={form.institution}
-                        onChange={set(
-                          'institution'
-                        )}
-                        placeholder="Enter institution or company"
-                      />
+                      <div className="admission-field-full">
+                        <div className="admission-notice">
+                          <span>ⓘ</span>
 
-                      <Field
-                        label="Course / Class"
-                        value={form.course}
-                        onChange={set('course')}
-                        placeholder="Enter course or class"
-                      />
-
-                      <Field
-                        label="Year / Semester"
-                        value={form.year}
-                        onChange={set('year')}
-                        placeholder="Example: 2nd Year"
-                      />
+                          <p>
+                            Your phone and
+                            email will be
+                            used for your
+                            library account
+                            and admission
+                            updates.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {currentStep === 5 && (
+                  {currentStep === 1 && (
                     <div className="admission-grid">
                       <SelectField
                         label="Select Plan *"
-                        value={form.plan}
-                        onChange={set('plan')}
-                        disabled={loadingPlans}
+                        value={
+                          form.plan
+                        }
+                        onChange={set(
+                          'plan'
+                        )}
+                        disabled={
+                          loadingPlans
+                        }
                         required
                         options={plans.map(
                           (plan) => [
@@ -751,35 +837,282 @@ export default function Admission() {
                       />
 
                       <SelectField
-                        label="Select Seat *"
-                        value={form.seat}
-                        onChange={set('seat')}
+                        label="Preferred Hall / Room *"
+                        value={
+                          form.preferredHall
+                        }
+                        onChange={set(
+                          'preferredHall'
+                        )}
                         disabled={
-                          loadingSeats ||
+                          loadingHalls ||
                           !form.plan ||
-                          seats.length === 0
+                          halls.length ===
+                            0
                         }
                         required
                         placeholder={
-                          loadingSeats
-                            ? 'Loading seats...'
-                            : seats.length === 0
-                              ? 'No seats available'
-                              : 'Select a seat'
+                          loadingHalls
+                            ? 'Loading halls...'
+                            : halls.length ===
+                                0
+                              ? 'No halls available'
+                              : 'Select a hall / room'
                         }
-                        options={seats.map(
-                          (seat) => [
-                            seat._id,
-                            `Seat ${seat.number} — ${seat.section} — ${seat.type}`
+                        options={halls.map(
+                          (hall) => [
+                            hall._id,
+                            `${hall.name} — ${hall.availableSeats} seats available`
                           ]
                         )}
                       />
 
+                      <div className="admission-field-full">
+                        <div className="admission-notice">
+                          <span>ⓘ</span>
+
+                          <p>
+                            Your selected
+                            hall is only a
+                            preference.
+                            The exact seat
+                            will be
+                            assigned by the
+                            library
+                            administration
+                            after
+                            approval.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="admission-field-full">
+                        <div className="admission-notice">
+                          <span>ⓘ</span>
+
+                          <p>
+                            Membership becomes
+                            active only after
+                            your admission is
+                            approved by the
+                            library
+                            administration.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep === 2 && (
+                    <div className="admission-grid">
+                      <SelectField
+                        label="ID proof type *"
+                        value={
+                          form.idProofType
+                        }
+                        onChange={set(
+                          'idProofType'
+                        )}
+                        required
+                        options={[
+                          [
+                            'Aadhaar',
+                            'Aadhaar Card'
+                          ],
+                          [
+                            'PAN',
+                            'PAN Card'
+                          ],
+                          [
+                            'Driving Licence',
+                            'Driving Licence'
+                          ],
+                          [
+                            'Voter ID',
+                            'Voter ID'
+                          ],
+                          [
+                            'Other',
+                            'Other'
+                          ]
+                        ]}
+                      />
+
+                      <Field
+                        label="ID proof number"
+                        value={
+                          form.idProofNumber
+                        }
+                        onChange={set(
+                          'idProofNumber'
+                        )}
+                        placeholder="Enter ID number"
+                      />
+
+                      <FileField
+                        id="admission-id-proof"
+                        label="ID proof document *"
+                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                        onChange={
+                          handleIdProof
+                        }
+                        file={
+                          idProof
+                        }
+                        hint="Required — JPG, PNG, WebP or PDF, max 5 MB"
+                        full
+                      />
+
+                      <FileField
+                        id="admission-photo"
+                        label="Profile photo"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={
+                          handlePhoto
+                        }
+                        file={
+                          photo
+                        }
+                        hint="Optional — JPG, PNG or WebP"
+                        full
+                      />
+                    </div>
+                  )}
+
+                  {currentStep === 3 && (
+                    <div className="admission-grid">
+                      <TextAreaField
+                        label="Address"
+                        value={
+                          form.address
+                        }
+                        onChange={set(
+                          'address'
+                        )}
+                        placeholder="Enter your complete address"
+                        full
+                      />
+
+                      <Field
+                        label="Date of birth"
+                        type="date"
+                        value={
+                          form.dob
+                        }
+                        onChange={set(
+                          'dob'
+                        )}
+                      />
+
+                      <Field
+                        label="City"
+                        value={
+                          form.city
+                        }
+                        onChange={set(
+                          'city'
+                        )}
+                        placeholder="Enter city"
+                      />
+
+                      <Field
+                        label="State"
+                        value={
+                          form.state
+                        }
+                        onChange={set(
+                          'state'
+                        )}
+                        placeholder="Enter state"
+                      />
+
+                      <Field
+                        label="PIN code"
+                        value={
+                          form.pincode
+                        }
+                        onChange={set(
+                          'pincode'
+                        )}
+                        placeholder="Enter PIN code"
+                      />
+
+                      <Field
+                        label="Emergency contact name"
+                        value={
+                          form.emergencyName
+                        }
+                        onChange={set(
+                          'emergencyName'
+                        )}
+                        placeholder="Name"
+                      />
+
+                      <Field
+                        label="Relationship"
+                        value={
+                          form.emergencyRelation
+                        }
+                        onChange={set(
+                          'emergencyRelation'
+                        )}
+                        placeholder="Father, Mother, Brother..."
+                      />
+
+                      <Field
+                        label="Emergency contact phone"
+                        type="tel"
+                        value={
+                          form.emergencyPhone
+                        }
+                        onChange={set(
+                          'emergencyPhone'
+                        )}
+                        placeholder="Phone number"
+                      />
+
+                      <Field
+                        label="College / School / Company"
+                        value={
+                          form.institution
+                        }
+                        onChange={set(
+                          'institution'
+                        )}
+                        placeholder="Institution or company"
+                      />
+
+                      <Field
+                        label="Course / Class"
+                        value={
+                          form.course
+                        }
+                        onChange={set(
+                          'course'
+                        )}
+                        placeholder="Course or class"
+                      />
+
+                      <Field
+                        label="Year / Semester"
+                        value={
+                          form.year
+                        }
+                        onChange={set(
+                          'year'
+                        )}
+                        placeholder="Example: 2nd Year"
+                      />
+
                       <TextAreaField
                         label="Message"
-                        value={form.message}
-                        onChange={set('message')}
-                        placeholder="Message or any additional information (optional)"
+                        value={
+                          form.message
+                        }
+                        onChange={set(
+                          'message'
+                        )}
+                        placeholder="Any additional information (optional)"
                         full
                       />
 
@@ -787,10 +1120,14 @@ export default function Admission() {
                         <span>ⓘ</span>
 
                         <p>
-                          Your admission request will be
-                          reviewed by the library administration.
-                          Membership becomes active only after
-                          approval.
+                          All additional
+                          details on this
+                          step are
+                          optional. You
+                          can submit your
+                          admission
+                          request without
+                          filling them.
                         </p>
                       </div>
                     </div>
@@ -801,8 +1138,12 @@ export default function Admission() {
                       <button
                         type="button"
                         className="admission-back-button"
-                        onClick={previousStep}
-                        disabled={submitting}
+                        onClick={
+                          previousStep
+                        }
+                        disabled={
+                          submitting
+                        }
                       >
                         ← Back
                       </button>
@@ -815,29 +1156,39 @@ export default function Admission() {
                       <button
                         type="button"
                         className="admission-next-button"
-                        onClick={nextStep}
+                        onClick={
+                          nextStep
+                        }
+                        disabled={
+                          submitting
+                        }
                       >
                         Next
-                        <span>→</span>
+                        <span>
+                          →
+                        </span>
                       </button>
                     ) : (
                       <button
-                        type="submit"
-                        className="admission-submit"
-                        disabled={
-                          submitting ||
-                          loadingPlans ||
-                          loadingSeats ||
-                          plans.length === 0 ||
-                          seats.length === 0
-                        }
-                      >
-                        {submitting
-                          ? 'Submitting...'
-                          : 'Submit Admission Request'}
+  type="button"
+  className="admission-submit"
+  onClick={submit}
+  disabled={
+    submitting ||
+    loadingPlans ||
+    loadingHalls ||
+    plans.length === 0 ||
+    halls.length === 0
+  }
+>
+  {submitting
+    ? 'Submitting...'
+    : 'Submit Admission Request'}
 
-                        <span>→</span>
-                      </button>
+  <span>
+    →
+  </span>
+</button>
                     )}
                   </div>
                 </form>
@@ -887,7 +1238,9 @@ function FileField({
   return (
     <label
       className={`admission-field admission-file-field ${
-        full ? 'admission-field-full' : ''
+        full
+          ? 'admission-field-full'
+          : ''
       }`}
       htmlFor={id}
     >
@@ -908,7 +1261,9 @@ function FileField({
               : 'Choose document'}
           </strong>
 
-          <small>{hint}</small>
+          <small>
+            {hint}
+          </small>
         </div>
 
         <span className="admission-file-button">
@@ -942,14 +1297,16 @@ function SelectField({
           {placeholder}
         </option>
 
-        {options.map(([value, label]) => (
-          <option
-            key={value}
-            value={value}
-          >
-            {label}
-          </option>
-        ))}
+        {options.map(
+          ([value, label]) => (
+            <option
+              key={value}
+              value={value}
+            >
+              {label}
+            </option>
+          )
+        )}
       </select>
     </label>
   )
@@ -965,7 +1322,9 @@ function TextAreaField({
   return (
     <label
       className={`admission-field ${
-        full ? 'admission-field-full' : ''
+        full
+          ? 'admission-field-full'
+          : ''
       }`}
     >
       <span>{label}</span>

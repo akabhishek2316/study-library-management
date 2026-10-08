@@ -52,10 +52,7 @@ function Guard({ roles, children }) {
     )
   }
 
-  if (
-    user.role === 'student' &&
-    user.admissionStatus !== 'approved'
-  ) {
+  if (!roles.includes(user.role)) {
     return (
       <Navigate
         to="/"
@@ -64,10 +61,36 @@ function Guard({ roles, children }) {
     )
   }
 
-  if (!roles.includes(user.role)) {
+  return children
+}
+
+function ApprovedStudentOnly({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <p className="center">
+        Loading...
+      </p>
+    )
+  }
+
+  if (
+    !user ||
+    user.role !== 'student'
+  ) {
     return (
       <Navigate
-        to="/"
+        to="/login"
+        replace
+      />
+    )
+  }
+
+  if (user.admissionStatus !== 'approved') {
+    return (
+      <Navigate
+        to="/student"
         replace
       />
     )
@@ -89,67 +112,6 @@ function OwnerOnly({ children }) {
   )
 }
 
-// function Home() {
-//   const { user, loading } = useAuth()
-
-//   if (loading) {
-//     return (
-//       <p className="center">
-//         Loading...
-//       </p>
-//     )
-//   }
-
-//   if (!user) {
-//     return (
-//       <div className="center">
-//         <h1>Study Library</h1>
-
-//         <p>
-//           Welcome to Study Library.
-//         </p>
-
-//         <div>
-//           <Navigate
-//             to="/login"
-//             replace
-//           />
-//         </div>
-//       </div>
-//     )
-//   }
-
-//   if (
-//     user.role === 'student' &&
-//     user.admissionStatus !== 'approved'
-//   ) {
-//     return (
-//       <div className="center">
-//         <h1>Study Library</h1>
-
-//         <p>
-//           Your admission request is pending.
-//         </p>
-
-//         <p>
-//           Please wait for admin approval.
-//         </p>
-//       </div>
-//     )
-//   }
-
-//   return (
-//     <Navigate
-//       to={
-//         user.role === 'student'
-//           ? '/student'
-//           : '/admin'
-//       }
-//       replace
-//     />
-//   )
-// }
-
 export default function App() {
   return (
     <Routes>
@@ -159,9 +121,9 @@ export default function App() {
       />
 
       <Route
-  path="/admission"
-  element={<Admission />}
-/>
+        path="/admission"
+        element={<Admission />}
+      />
 
       <Route
         path="/verify-receipt/:token"
@@ -194,22 +156,20 @@ export default function App() {
         />
 
         <Route
-  path="admissions"
-  element={<AdmissionRequests />}
-/>
-
-
+          path="admissions"
+          element={<AdmissionRequests />}
+        />
 
         <Route
           path="seats"
           element={<Seats />}
         />
 
+        <Route
+          path="seat-change-requests"
+          element={<SeatChangeRequests />}
+        />
 
-<Route
-  path="seat-change-requests"
-  element={<SeatChangeRequests />}
-/>
         <Route
           path="memberships"
           element={<Memberships />}
@@ -291,28 +251,48 @@ export default function App() {
         />
 
         <Route
-  path="change-seat"
-  element={<ChangeSeat />}
-/>
+          path="change-seat"
+          element={
+            <ApprovedStudentOnly>
+              <ChangeSeat />
+            </ApprovedStudentOnly>
+          }
+        />
 
         <Route
           path="attendance"
-          element={<MyAttendance />}
+          element={
+            <ApprovedStudentOnly>
+              <MyAttendance />
+            </ApprovedStudentOnly>
+          }
         />
 
         <Route
           path="notices"
-          element={<MyNotices />}
+          element={
+            <ApprovedStudentOnly>
+              <MyNotices />
+            </ApprovedStudentOnly>
+          }
         />
 
         <Route
           path="feedback"
-          element={<MyFeedback />}
+          element={
+            <ApprovedStudentOnly>
+              <MyFeedback />
+            </ApprovedStudentOnly>
+          }
         />
 
         <Route
           path="notifications"
-          element={<Notifications />}
+          element={
+            <ApprovedStudentOnly>
+              <Notifications />
+            </ApprovedStudentOnly>
+          }
         />
       </Route>
 

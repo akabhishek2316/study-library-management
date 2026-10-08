@@ -164,31 +164,52 @@ function VerifyReceipt() {
                             </div>
                         </div>
 
-                        {membership && (
-                            <div className="verify-section">
-                                <h3>Membership details</h3>
-                                <div className="verify-details-grid">
-                                    <Detail
-                                        label="Membership plan"
-                                        value={membership.plan}
-                                    />
-                                    <Detail label="Seat number" value={membership.seat} />
-                                    <Detail label="Shift" value={membership.shift} />
-                                    <Detail
-                                        label="Membership status"
-                                        value={membership.status}
-                                    />
-                                    <Detail
-                                        label="Valid from"
-                                        value={formatDate(membership.startDate)}
-                                    />
-                                    <Detail
-                                        label="Valid until"
-                                        value={formatDate(membership.endDate)}
-                                    />
-                                </div>
-                            </div>
-                        )}
+                       {membership && (
+    <div className="verify-section">
+        <h3>Membership details</h3>
+
+        <div className="verify-details-grid">
+            <Detail
+                label="Membership plan"
+                value={membership.plan}
+            />
+
+            <Detail
+                label="Hall"
+                value={membership.hall}
+            />
+
+            <Detail
+                label="Seat number"
+                value={membership.seat}
+            />
+
+            <Detail
+                label="Shift"
+                value={membership.shift}
+            />
+
+            <Detail
+                label="Membership status"
+                value={membership.status}
+            />
+
+            <Detail
+                label="Valid from"
+                value={formatDate(
+                    membership.startDate
+                )}
+            />
+
+            <Detail
+                label="Valid until"
+                value={formatDate(
+                    membership.endDate
+                )}
+            />
+        </div>
+    </div>
+)}
 
                         <footer className="verify-footer">
                             <span className="verify-footer-check">✓</span>
