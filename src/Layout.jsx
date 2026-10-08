@@ -228,11 +228,11 @@ export default function Layout({ admin }) {
 
   const links = admin
     ? [
-        ...ADMIN,
-        ...(user.role === 'owner'
-          ? OWNER
-          : []),
-      ]
+      ...ADMIN,
+      ...(user.role === 'owner'
+        ? OWNER
+        : []),
+    ]
     : STUDENT
 
   const base = admin
@@ -242,7 +242,7 @@ export default function Layout({ admin }) {
   const studentLocked =
     !admin &&
     user.admissionStatus !==
-      'approved'
+    'approved'
 
   const current = [...links]
     .sort(
@@ -262,7 +262,7 @@ export default function Layout({ admin }) {
   )
     ? 'Notifications'
     : current?.[1] ||
-      'Study Library'
+    'Study Library'
 
   const today =
     new Date().toLocaleDateString(
@@ -368,7 +368,7 @@ export default function Layout({ admin }) {
         .then((d) =>
           setUnread(d.unread)
         )
-        .catch(() => {})
+        .catch(() => { })
 
     load()
 
@@ -489,18 +489,15 @@ export default function Layout({ admin }) {
 
   return (
     <div
-      className={`shell ${
-        admin
-          ? 'admin-shell'
-          : 'student-shell'
-      } ${
-        drawer ? 'drawer-open' : ''
-      }`}
+      className={`shell ${admin
+        ? 'admin-shell'
+        : 'student-shell'
+        } ${drawer ? 'drawer-open' : ''
+        }`}
     >
       <div
-        className={`topload ${
-          busy ? 'on' : ''
-        }`}
+        className={`topload ${busy ? 'on' : ''
+          }`}
         aria-hidden="true"
       />
 
@@ -705,9 +702,43 @@ export default function Layout({ admin }) {
                           Install app
                         </button>
                       )}
+                    <button
+                      className="menu-item"
+                      onClick={() => {
+                        setMenu(false)
+
+                        navigate(
+                          admin
+                            ? '/admin/change-password'
+                            : '/student/change-password'
+                        )
+                      }}
+                    >
+                      <Icon
+                        name="key"
+                        size={18}
+                      />
+
+                      Change password
+                    </button>
 
                     <button
                       className="menu-item"
+                      onClick={() => {
+                        setMenu(false)
+                        navigate('/about')
+                      }}
+                    >
+                      <Icon
+                        name="info"
+                        size={18}
+                      />
+
+                      About
+                    </button>
+                    <button
+                      className="menu-item"
+                      style={{ color: "red" }}
                       onClick={() => {
                         logout()
                         navigate('/login')
@@ -716,6 +747,7 @@ export default function Layout({ admin }) {
                       <Icon
                         name="logout"
                         size={18}
+
                       />
 
                       Log out

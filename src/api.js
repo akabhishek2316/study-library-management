@@ -10,6 +10,7 @@ const QUIET = [
   /^\/auth\//,
   /^\/notifications/,
   /^\/attendance\/scan/,
+  /^\/attendance\/kiosk\//,
   /^\/payments\/razorpay\//,
 ]
 
@@ -22,7 +23,12 @@ const DONE = {
 
 export async function api(
   path,
-  { method = 'GET', body } = {}
+  {
+    method = 'GET',
+    body,
+    headers: extraHeaders = {},
+    auth = true,
+  } = {}
 ) {
   const token = localStorage.getItem('token')
 
@@ -41,11 +47,13 @@ export async function api(
         body instanceof FormData
 
       const headers = {
-        ...(token
+        ...(auth && token
           ? {
-              Authorization: `Bearer ${token}`,
-            }
+            Authorization: `Bearer ${token}`,
+          }
           : {}),
+
+        ...extraHeaders,
       }
 
       if (!isFormData) {
@@ -82,8 +90,8 @@ export async function api(
       toast(
         'success',
         data.message ||
-          DONE[method] ||
-          'Done'
+        DONE[method] ||
+        'Done'
       )
     }
 
@@ -104,14 +112,14 @@ export async function api(
 export const fmtDate = (d) =>
   d
     ? new Date(d).toLocaleDateString(
-        'en-IN',
-        {
-          timeZone: 'UTC',
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        }
-      )
+      'en-IN',
+      {
+        timeZone: 'UTC',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }
+    )
     : '-'
 
 export const todayISO = () =>
@@ -128,27 +136,27 @@ export const rupees = (n) =>
 export const fmtDateTime = (d) =>
   d
     ? new Date(d).toLocaleString(
-        'en-IN',
-        {
-          timeZone: 'Asia/Kolkata',
-          day: '2-digit',
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit',
-        }
-      )
+      'en-IN',
+      {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }
+    )
     : '-'
 
 export const fmtTime = (d) =>
   d
     ? new Date(d).toLocaleTimeString(
-        'en-IN',
-        {
-          timeZone: 'Asia/Kolkata',
-          hour: '2-digit',
-          minute: '2-digit',
-        }
-      )
+      'en-IN',
+      {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+      }
+    )
     : '-'
 
 export const fmtMins = (m) =>

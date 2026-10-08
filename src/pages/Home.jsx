@@ -169,6 +169,10 @@ export default function Home() {
               How It Works
             </a>
 
+            <Link to="/about">
+              About
+            </Link>
+
             {user?.admissionStatus === 'pending' && (
               <span className="home-pending">
                 Admission Pending
@@ -208,11 +212,10 @@ export default function Home() {
             {HERO_SLIDES.map((item, index) => (
               <div
                 key={item.image}
-                className={`home-slide ${
-                  index === activeSlide
+                className={`home-slide ${index === activeSlide
                     ? 'active'
                     : ''
-                }`}
+                  }`}
                 style={{
                   backgroundImage: `url("${item.image}")`,
                 }}
@@ -313,9 +316,8 @@ export default function Home() {
                 onClick={() =>
                   setActiveSlide(index)
                 }
-                aria-label={`Go to slide ${
-                  index + 1
-                }`}
+                aria-label={`Go to slide ${index + 1
+                  }`}
               />
             ))}
           </div>
@@ -383,46 +385,46 @@ export default function Home() {
 
             <div className="home-feature-grid">
               <FeatureCard
-  icon="❄️"
-  label="COMFORT • FOCUS"
-  title="Fully Air-Conditioned Hall"
-  text="Study comfortably for long hours in a clean, peaceful and fully air-conditioned reading hall."
-/>
+                icon="❄️"
+                label="COMFORT • FOCUS"
+                title="Fully Air-Conditioned Hall"
+                text="Study comfortably for long hours in a clean, peaceful and fully air-conditioned reading hall."
+              />
 
-<FeatureCard
-  icon="🪑"
-  label="YOUR • SPACE"
-  title="Dedicated Seating"
-  text="Enjoy your own dedicated study seat with a comfortable environment designed for focused learning."
-/>
+              <FeatureCard
+                icon="🪑"
+                label="YOUR • SPACE"
+                title="Dedicated Seating"
+                text="Enjoy your own dedicated study seat with a comfortable environment designed for focused learning."
+              />
 
-<FeatureCard
-  icon="📱"
-  label="SMART • STUDY"
-  title="Student Mobile App"
-  text="Manage your library activities, check updates and maintain your daily study streak directly from your phone."
-/>
+              <FeatureCard
+                icon="📱"
+                label="SMART • STUDY"
+                title="Student Mobile App"
+                text="Manage your library activities, check updates and maintain your daily study streak directly from your phone."
+              />
 
-<FeatureCard
-  icon="⚡"
-  label="ONLINE • ANYTIME"
-  title="Everything Online"
-  text="Manage membership, attendance, seat requests and other services online without needing to visit the owner."
-/>
+              <FeatureCard
+                icon="⚡"
+                label="ONLINE • ANYTIME"
+                title="Everything Online"
+                text="Manage membership, attendance, seat requests and other services online without needing to visit the owner."
+              />
 
-<FeatureCard
-  icon="📶"
-  label="CONNECTED • PRODUCTIVE"
-  title="Wi-Fi & Charging"
-  text="Stay connected with high-speed Wi-Fi and convenient charging points for your study devices."
-/>
+              <FeatureCard
+                icon="📶"
+                label="CONNECTED • PRODUCTIVE"
+                title="Wi-Fi & Charging"
+                text="Stay connected with high-speed Wi-Fi and convenient charging points for your study devices."
+              />
 
-<FeatureCard
-  icon="🛡️"
-  label="SAFE • CLEAN • RELIABLE"
-  title="Safe & Comfortable"
-  text="Study in a clean and hygienic environment with CCTV security, proper lighting, drinking water and power backup."
-/>
+              <FeatureCard
+                icon="🛡️"
+                label="SAFE • CLEAN • RELIABLE"
+                title="Safe & Comfortable"
+                text="Study in a clean and hygienic environment with CCTV security, proper lighting, drinking water and power backup."
+              />
             </div>
           </div>
         </section>

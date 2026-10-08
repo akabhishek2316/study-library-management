@@ -31,6 +31,8 @@ import VerifyReceipt from './pages/VerifyReceipt'
 import Admission from './pages/Admission'
 import ChangeSeat from './pages/ChangeSeat'
 import SeatChangeRequests from './pages/SeatChangeRequests'
+import ChangePassword from './pages/ChangePassword'
+import About from './pages/About'
 
 function Guard({ roles, children }) {
   const { user, loading } = useAuth()
@@ -87,6 +89,8 @@ function ApprovedStudentOnly({ children }) {
     )
   }
 
+
+
   if (user.admissionStatus !== 'approved') {
     return (
       <Navigate
@@ -118,6 +122,11 @@ export default function App() {
       <Route
         path="/"
         element={<Home />}
+      />
+
+      <Route
+        path="/about"
+        element={<About />}
       />
 
       <Route
@@ -183,6 +192,12 @@ export default function App() {
         <Route
           path="attendance"
           element={<Attendance />}
+
+        />
+
+        <Route
+          path="change-password"
+          element={<ChangePassword />}
         />
 
         <Route
@@ -260,6 +275,11 @@ export default function App() {
         />
 
         <Route
+          path="change-password"
+          element={<ChangePassword />}
+        />
+
+        <Route
           path="attendance"
           element={
             <ApprovedStudentOnly>
@@ -298,15 +318,8 @@ export default function App() {
 
       <Route
         path="/kiosk"
-        element={
-          <Guard
-            roles={['owner', 'staff']}
-          >
-            <Kiosk />
-          </Guard>
-        }
+        element={<Kiosk />}
       />
-
       <Route
         path="*"
         element={

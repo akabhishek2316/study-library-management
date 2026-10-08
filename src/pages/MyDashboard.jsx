@@ -233,17 +233,17 @@ export default function MyDashboard() {
 
   const left = c
     ? Math.max(
-        0,
-        Math.round(
-          (
-            new Date(
-              c.endDate
-            ) -
-            new Date()
-          ) /
-            86400000
-        ) + 1
-      )
+      0,
+      Math.round(
+        (
+          new Date(
+            c.endDate
+          ) -
+          new Date()
+        ) /
+        86400000
+      ) + 1
+    )
     : 0
 
   const owing =
@@ -290,8 +290,8 @@ export default function MyDashboard() {
         name:
           'Study Library',
 
-       description:
-  `${m.plan?.name} · ${m.hall?.name || '-'} · Seat ${m.seat?.number || '-'}`,
+        description:
+          `${m.plan?.name} · ${m.hall?.name || '-'} · Seat ${m.seat?.number || '-'}`,
 
         prefill: {
           name: user.name,
@@ -324,7 +324,7 @@ export default function MyDashboard() {
             } catch (err) {
               setError(
                 err.message +
-                  ' If money was deducted, it will be confirmed shortly.'
+                ' If money was deducted, it will be confirmed shortly.'
               )
             }
           },
@@ -372,11 +372,11 @@ export default function MyDashboard() {
 
           <p>
             {notice.body.length >
-            140
+              140
               ? notice.body.slice(
-                  0,
-                  140
-                ) + '…'
+                0,
+                140
+              ) + '…'
               : notice.body}
           </p>
         </Link>
@@ -388,10 +388,10 @@ export default function MyDashboard() {
             Your seat
           </span>
 
-         <b className="big">
-  {c.hall?.name || '-'} · Seat{' '}
-  {c.seat?.number || '-'}
-</b>
+          <b className="big">
+            {c.hall?.name || '-'} · Seat{' '}
+            {c.seat?.number || '-'}
+          </b>
 
           <p>
             {c.plan?.name} ·{' '}
@@ -403,28 +403,28 @@ export default function MyDashboard() {
           </p>
 
           <p className="expiry-info">
-  Valid till{' '}
-  <b className={left <= 3 ? 'expiry-date urgent' : 'expiry-date'}>
-    {fmtDate(c.endDate)}
-  </b>{' '}
-  ·{' '}
-  <b className={left <= 3 ? 'expiry-days urgent' : 'expiry-days'}>
-    {left} day{left === 1 ? '' : 's'} left
-  </b>
+            Valid till{' '}
+            <b className={left <= 3 ? 'expiry-date urgent' : 'expiry-date'} style={{ color: "orange" }}>
+              {fmtDate(c.endDate)}
+            </b>{' '}
+            ·{' '}
+            <b className={left <= 3 ? 'expiry-days urgent' : 'expiry-days'} style={{ color: "pink" }}>
+              {left} day{left === 1 ? '' : 's'} left
+            </b>
 
-  {c.status === 'paused' && (
-    <span className="paused-label"> (paused)</span>
-  )}
-</p>
+            {c.status === 'paused' && (
+              <span className="paused-label"> (paused)</span>
+            )}
+          </p>
           {c.status ===
             'active' && (
-            <Link
-              to="/student/change-seat"
-              className="button"
-            >
-              Change Seat
-            </Link>
-          )}
+              <Link
+                to="/student/change-seat"
+                className="button"
+              >
+                Change Seat
+              </Link>
+            )}
         </div>
       ) : (
         <div className="card">
@@ -448,23 +448,23 @@ export default function MyDashboard() {
             </b>
 
             <small>
-  {m.plan?.name} ·{' '}
-  {m.hall?.name || '-'} · Seat{' '}
-  {m.seat?.number || '-'} ·{' '}
-  {fmtDate(
-    m.startDate
-  )}{' '}
-  →{' '}
-  {fmtDate(
-    m.endDate
-  )}{' '}
-  (paid{' '}
-  {rupees(m.paid)} of{' '}
-  {rupees(
-    m.amount
-  )}
-  )
-</small>
+              {m.plan?.name} ·{' '}
+              {m.hall?.name || '-'} · Seat{' '}
+              {m.seat?.number || '-'} ·{' '}
+              {fmtDate(
+                m.startDate
+              )}{' '}
+              →{' '}
+              {fmtDate(
+                m.endDate
+              )}{' '}
+              (paid{' '}
+              {rupees(m.paid)} of{' '}
+              {rupees(
+                m.amount
+              )}
+              )
+            </small>
           </div>
 
           {online ? (
@@ -475,7 +475,7 @@ export default function MyDashboard() {
                 max={m.due}
                 value={
                   m._id ===
-                  c?._id
+                    c?._id
                     ? amount
                     : m.due
                 }
@@ -569,13 +569,13 @@ export default function MyDashboard() {
                       style={{
                         color:
                           p.type ===
-                          'refund'
+                            'refund'
                             ? '#dc2626'
                             : undefined,
                       }}
                     >
                       {p.type ===
-                      'refund'
+                        'refund'
                         ? '−'
                         : ''}
 
@@ -608,15 +608,15 @@ export default function MyDashboard() {
 
               {payments.length ===
                 0 && (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="muted"
-                  >
-                    No payments yet.
-                  </td>
-                </tr>
-              )}
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="muted"
+                    >
+                      No payments yet.
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>
@@ -631,9 +631,9 @@ export default function MyDashboard() {
           <table>
             <thead>
               <tr>
-               <th>
-  Hall / Seat
-</th>
+                <th>
+                  Hall / Seat
+                </th>
 
                 <th>
                   Plan
@@ -664,9 +664,9 @@ export default function MyDashboard() {
                     key={m._id}
                   >
                     <td>
-  {m.hall?.name || '-'} · Seat{' '}
-  {m.seat?.number || '-'}
-</td>
+                      {m.hall?.name || '-'} · Seat{' '}
+                      {m.seat?.number || '-'}
+                    </td>
                     <td>
                       {m.plan?.name}
                     </td>
@@ -690,8 +690,8 @@ export default function MyDashboard() {
                     <td>
                       {m.due > 0
                         ? rupees(
-                            m.due
-                          )
+                          m.due
+                        )
                         : '-'}
                     </td>
 
@@ -704,16 +704,16 @@ export default function MyDashboard() {
 
               {d.history.length ===
                 0 && (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="muted"
-                  >
-                    No memberships
-                    yet.
-                  </td>
-                </tr>
-              )}
+                  <tr>
+                    <td
+                      colSpan="6"
+                      className="muted"
+                    >
+                      No memberships
+                      yet.
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>

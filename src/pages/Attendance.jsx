@@ -4,6 +4,7 @@ import {
   api,
   downloadFile,
   fmtDate,
+  fmtDateTime,
   fmtMins,
   fmtTime,
   thisMonth,
@@ -25,7 +26,6 @@ export default function Attendance() {
           <button>Open QR display ↗</button>
         </Link>
       </div>
-
       {error && (
         <div className="alert error">
           {error}
@@ -37,6 +37,7 @@ export default function Attendance() {
           ['today', 'Today'],
           ['report', 'Monthly report'],
           ['absent', 'Absent'],
+          ['kiosks', 'Kiosks'],
         ].map(([k, l]) => (
           <button
             key={k}
@@ -50,6 +51,10 @@ export default function Attendance() {
 
       {tab === 'today' && (
         <Today setError={setError} />
+      )}
+
+      {tab === 'kiosks' && (
+        <Kiosks setError={setError} />
       )}
 
       {tab === 'report' && (
@@ -395,10 +400,10 @@ function Report({ setError }) {
                   <td>
                     {x.daysPresent
                       ? fmtMins(
-                          Math.round(
-                            x.minutes / x.daysPresent
-                          )
+                        Math.round(
+                          x.minutes / x.daysPresent
                         )
+                      )
                       : '-'}
                   </td>
 
@@ -518,5 +523,267 @@ function Absent({ setError }) {
         </div>
       )}
     </div>
+  )
+}
+
+
+function Kiosks({ setError }) {
+  const [kiosks, setKiosks] = useState([])
+  const [name, setName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [activationCode, setActivationCode] =
+    useState('')
+
+  const load = () => {
+    api('/attendance/kiosk')
+      .then(setKiosks)
+      .catch((e) => setError(e.message))
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const create = async () => {
+    const kioskName = name.trim()
+
+    if (!kioskName) {
+      setError('Kiosk name is required')
+      return
+    }
+
+    setCreating(true)
+    setError('')
+    setActivationCode('')
+
+    try {
+      const data = await api(
+        '/attendance/kiosk',
+        {
+          method: 'POST',
+          body: {
+            name: kioskName,
+          },
+        }
+      )
+
+      setActivationCode(
+        data.activationCode
+      )
+
+      setName('')
+      load()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const disable = async (id) => {
+    if (
+      !confirm(
+        'Disable this attendance kiosk? The current kiosk token will stop working.'
+      )
+    ) {
+      return
+    }
+
+    setError('')
+
+    try {
+      await api(
+        `/attendance/kiosk/${id}/disable`,
+        {
+          method: 'PATCH',
+        }
+      )
+
+      load()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  const copyCode = async () => {
+    if (!activationCode) return
+
+    try {
+      await navigator.clipboard.writeText(
+        activationCode
+      )
+    } catch {
+      setError(
+        'Could not copy the activation code.'
+      )
+    }
+  }
+
+  return (
+    <>
+      <div className="card">
+        <h3>Create Attendance Kiosk</h3>
+
+        <div className="row-form">
+          <label>
+            Kiosk name
+
+            <input
+              type="text"
+              value={name}
+              onChange={(e) =>
+                setName(e.target.value)
+              }
+              placeholder="Gate 1"
+            />
+          </label>
+
+          <button
+            onClick={create}
+            disabled={
+              creating || !name.trim()
+            }
+          >
+            {creating
+              ? 'Creating...'
+              : 'Create Kiosk'}
+          </button>
+        </div>
+      </div>
+
+      {activationCode && (
+        <div className="card">
+          <h3>Activation Code</h3>
+
+          <p className="muted">
+            Open <b>/kiosk</b> on the gate
+            tablet and enter this code.
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <strong
+              style={{
+                fontSize: '2rem',
+                letterSpacing: 6,
+              }}
+            >
+              {activationCode}
+            </strong>
+
+            <button
+              className="ghost"
+              onClick={copyCode}
+            >
+              Copy
+            </button>
+          </div>
+
+          <small className="muted">
+            This code expires in 10 minutes and
+            can only be used once.
+          </small>
+        </div>
+      )}
+
+      <div className="card">
+        <div
+          className="row-form"
+          style={{
+            justifyContent: 'space-between',
+          }}
+        >
+          <h3>Attendance Kiosks</h3>
+
+          <button
+            className="ghost"
+            onClick={load}
+          >
+            Refresh
+          </button>
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Last used</th>
+                <th>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {kiosks.map((kiosk) => (
+                <tr key={kiosk._id}>
+                  <td>
+                    <b>{kiosk.name}</b>
+                  </td>
+
+                  <td>
+                    {kiosk.active ? (
+                      <span className="badge green">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="badge red">
+                        Disabled
+                      </span>
+                    )}
+                  </td>
+
+                  <td>
+                    {kiosk.lastUsedAt
+                      ? fmtDateTime(
+                        kiosk.lastUsedAt
+                      )
+                      : 'Never'}
+                  </td>
+
+                  <td>
+                    {fmtDateTime(
+                      kiosk.createdAt
+                    )}
+                  </td>
+
+                  <td className="actions">
+                    {kiosk.active && (
+                      <button
+                        className="ghost danger"
+                        onClick={() =>
+                          disable(kiosk._id)
+                        }
+                      >
+                        Disable
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+
+              {kiosks.length === 0 && (
+                <tr>
+                  <td
+                    colSpan="5"
+                    className="muted"
+                  >
+                    No attendance kiosks created
+                    yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   )
 }
