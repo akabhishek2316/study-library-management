@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+
+import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
 import { api, fmtDate } from '../api'
 import { useAuth } from '../AuthContext'
 
@@ -18,6 +24,19 @@ export default function Notices() {
   const [form, setForm] = useState(empty)
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
+
+  const paged = usePaged(list, {
+    pageSize: 10,
+    searchText: (n) => `${n.title} ${n.body}`,
+    filters: {
+      state: (n, v) => {
+        const ended =
+          n.expiresAt && new Date(n.expiresAt) < new Date()
+
+        return v === 'expired' ? ended : !ended
+      },
+    },
+  })
 
   const load = () =>
     api('/notices/all')
@@ -183,7 +202,48 @@ export default function Notices() {
       <div className="card">
         <h3>All notices</h3>
 
-        {list.map((n) => (
+        <ListBar
+          list={paged}
+          placeholder="Search notices..."
+          filters={[
+            {
+              key: 'state',
+              label: 'Show',
+              options: [
+                ['active', 'Active'],
+                ['expired', 'Expired'],
+              ],
+            },
+          ]}
+        />
+
+        {list.some(
+          (n) =>
+            n.expiresAt &&
+            new Date(n.expiresAt) < new Date()
+        ) && (
+          <p>
+            <button
+              className="ghost danger"
+              onClick={run(async () => {
+                if (
+                  confirm(
+                    'Delete all expired notices?'
+                  )
+                ) {
+                  await api(
+                    '/notices/expired/all',
+                    { method: 'DELETE' }
+                  )
+                }
+              })}
+            >
+              Delete all expired notices
+            </button>
+          </p>
+        )}
+
+        {paged.items.map((n) => (
           <div
             className={`notice ${
               expired(n) ? 'old' : ''
@@ -252,11 +312,7 @@ export default function Notices() {
           </div>
         ))}
 
-        {list.length === 0 && (
-          <p className="muted">
-            No notices yet.
-          </p>
-        )}
+        <Pager list={paged} />
       </div>
 
       {user.role === 'owner' && (

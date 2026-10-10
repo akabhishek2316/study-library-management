@@ -9,7 +9,6 @@ import {
   rupees,
 } from '../api'
 
-import './MyDashboard.css'
 
 import { useAuth } from '../AuthContext'
 
@@ -142,7 +141,7 @@ export default function MyDashboard() {
     'pending'
   ) {
     return (
-      <>
+      <div className="my-dash">
         <h1>
           Hi,{' '}
           {user.name.split(' ')[0]} 👋
@@ -176,7 +175,7 @@ export default function MyDashboard() {
             regularly for updates.
           </p>
         </div>
-      </>
+      </div>
     )
   }
 
@@ -185,7 +184,7 @@ export default function MyDashboard() {
     'rejected'
   ) {
     return (
-      <>
+      <div className="my-dash">
         <h1>
           Hi,{' '}
           {user.name.split(' ')[0]} 👋
@@ -224,7 +223,7 @@ export default function MyDashboard() {
             library desk.
           </p>
         </div>
-      </>
+      </div>
     )
   }
 
@@ -335,7 +334,7 @@ export default function MyDashboard() {
   }
 
   return (
-    <>
+    <div className="my-dash">
       <h1>
         Hi,{' '}
         {user.name.split(' ')[0]} 👋
@@ -718,6 +717,6 @@ export default function MyDashboard() {
           </table>
         </div>
       </div>
-    </>
+    </div>
   )
 }

@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react'
 
 import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
+import { API_BASE } from '../api'
+
+import {
   api,
   fmtDate,
 } from '../api'
 
-// import './Students.css'
 
 const empty = {
   name: '',
@@ -28,13 +34,26 @@ const empty = {
   yearSemester: '',
 }
 
-const BASE =
-  import.meta.env.VITE_API_URL ||
-  'http://localhost:5000/api'
+const BASE = API_BASE
 
 export default function Students() {
   const [list, setList] = useState([])
   const [q, setQ] = useState('')
+
+  // search is done by the server (q); filters and pages are done here
+  const paged = usePaged(list, {
+    pageSize: 15,
+    filters: {
+      membership: (s, v) =>
+        v === 'none'
+          ? !s.current
+          : v === 'has'
+          ? !!s.current
+          : s.current &&
+            new Date(s.current.endDate) <
+              new Date(Date.now() + 7 * 86400000),
+    },
+  })
   const [status, setStatus] = useState('active')
 
   const [form, setForm] = useState({
@@ -495,6 +514,22 @@ export default function Students() {
           }
         />
 
+        <ListBar
+          list={paged}
+          showSearch={false}
+          filters={[
+            {
+              key: 'membership',
+              label: 'Membership',
+              options: [
+                ['has', 'Has membership'],
+                ['none', 'No membership'],
+                ['ending', 'Ending within 7 days'],
+              ],
+            },
+          ]}
+        />
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -509,7 +544,7 @@ export default function Students() {
             </thead>
 
             <tbody>
-              {list.map((s) => (
+              {paged.items.map((s) => (
                 <tr key={s._id}>
                   <td>
                     {s.name}
@@ -585,19 +620,11 @@ export default function Students() {
                 </tr>
               ))}
 
-              {list.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="muted"
-                  >
-                    No students yet.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        <Pager list={paged} />
       </div>
 
       {selectedStudent && (

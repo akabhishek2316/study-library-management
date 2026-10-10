@@ -12,10 +12,16 @@ import {
 
 import { useAuth } from '../AuthContext'
 
-import FloorPlan, {
-  autoPos,
-} from '../components/FloorPlan'
+import FloorPlan from '../components/FloorPlan'
 
+import {
+  PRESETS,
+  autoPos,
+  buildLayout,
+} from '../components/floorLayouts'
+
+
+const EMPTY_LIST = []
 
 export default function Seats() {
   const { user } =
@@ -72,6 +78,31 @@ export default function Seats() {
   */
   const [groupSize, setGroupSize] =
     useState(4)
+
+  /*
+    Floor plan extras. They come from the database (hall.floor):
+      floors     = what is saved
+      floorEdits = unsaved changes made while editing
+                   { [hallId]: { objects, ratio } }
+  */
+  const [floors, setFloors] =
+    useState({})
+
+  const [floorEdits, setFloorEdits] =
+    useState({})
+
+  const [resetKey, setResetKey] =
+    useState(0)
+
+  const [preset, setPreset] =
+    useState('grid')
+
+  // "Row blocks" preset options
+  const [perRow, setPerRow] =
+    useState(6)
+
+  const [rowsPerBlock, setRowsPerBlock] =
+    useState(2)
 
 
   const [form, setForm] =
@@ -237,6 +268,14 @@ export default function Seats() {
           )
             ? data.seats
             : []
+        )
+
+        setFloors(
+          data?.floors &&
+            typeof data.floors ===
+              'object'
+            ? data.floors
+            : {}
         )
       } catch (err) {
         setSeats([])
@@ -722,396 +761,137 @@ export default function Seats() {
 
 
   // ------------------------------------------------
-  // AUTO ARRANGE
+  // FLOOR PLAN HELPERS
   // ------------------------------------------------
 
-  const autoArrange =
-    () => {
-      const next = {}
+  const floorFor =
+    (hallId) => ({
+      objects:
+        floorEdits[hallId]
+          ?.objects ??
+        floors[hallId]
+          ?.objects ??
+        EMPTY_LIST,
+
+      ratio:
+        floorEdits[hallId]
+          ?.ratio ??
+        floors[hallId]
+          ?.ratio ??
+        null,
+
+      // an edit of "null" (normal seat size) must win over the saved value
+      seatPct:
+        floorEdits[hallId] &&
+        'seatPct' in
+          floorEdits[hallId]
+          ? floorEdits[hallId]
+              .seatPct
+          : floors[hallId]
+              ?.seatPct ??
+            null,
+    })
 
 
-      hallGroups.forEach(
-        (group) => {
-          group.seats.forEach(
-            (
-              seat,
-              index
-            ) => {
-              next[
-                seat._id
-              ] =
-                autoPos(
-                  index,
-                  group.seats.length
-                )
-            }
-          )
-        }
+  const changeObjects =
+    (hallId, objects) =>
+      setFloorEdits(
+        (current) => ({
+          ...current,
+
+          [hallId]: {
+            ...current[
+              hallId
+            ],
+
+            objects,
+          },
+        })
       )
 
 
-      setLayout(
-        next
+  // leaving edit mode throws away unsaved floor changes
+  useEffect(() => {
+    if (!editing) {
+      setFloorEdits({})
+      setResetKey(
+        (key) => key + 1
       )
     }
+  }, [editing])
 
 
   // ------------------------------------------------
-  // GROUP SHAPE
-  // ------------------------------------------------
-
-  const getGroupShape =
-    (size) => {
-      if (
-        size === 2
-      ) {
-        return {
-          columns: 2,
-          rows: 1,
-        }
-      }
-
-
-      if (
-        size === 4
-      ) {
-        return {
-          columns: 2,
-          rows: 2,
-        }
-      }
-
-
-      if (
-        size === 6
-      ) {
-        return {
-          columns: 3,
-          rows: 2,
-        }
-      }
-
-
-      if (
-        size === 8
-      ) {
-        return {
-          columns: 4,
-          rows: 2,
-        }
-      }
-
-
-      if (
-        size === 10
-      ) {
-        return {
-          columns: 5,
-          rows: 2,
-        }
-      }
-
-
-      if (
-        size === 12
-      ) {
-        return {
-          columns: 6,
-          rows: 2,
-        }
-      }
-
-
-      return {
-        columns: 2,
-        rows: 2,
-      }
-    }
-
-
-  // ------------------------------------------------
-  // GROUP LAYOUT
+  // PRESETS
   //
-  // Uses the full floor area while
-  // keeping enough spacing between
-  // individual seats and groups.
+  // The layout engine (components/floorLayouts.js)
+  // keeps every seat far enough from the next one
+  // and makes the board as tall as it needs to be,
+  // so seats can never overlap.
   // ------------------------------------------------
 
-  const applyGroupLayout =
+  const applyPreset =
     () => {
-      const size =
-        Number(
-          groupSize
-        )
-
-
-      const next = {}
-
+      const nextPositions = {}
+      const nextEdits = {}
 
       hallGroups.forEach(
         (group) => {
-          const groupSeats =
-            group.seats
-
-
-          if (
-            !groupSeats.length
-          ) {
-            return
-          }
-
-
-          const totalGroups =
-            Math.ceil(
-              groupSeats.length /
-                size
-            )
-
-
-          /*
-            Spread group blocks
-            across the board.
-
-            Maximum 3 groups
-            horizontally.
-          */
-
-          const groupsPerRow =
-            Math.min(
-              3,
-              Math.max(
-                1,
-                Math.ceil(
-                  Math.sqrt(
-                    totalGroups
-                  )
-                )
-              )
-            )
-
-
-          const groupRows =
-            Math.ceil(
-              totalGroups /
-                groupsPerRow
-            )
-
-
-          const BOARD_LEFT =
-            7
-
-          const BOARD_RIGHT =
-            93
-
-          const BOARD_TOP =
-            10
-
-          const BOARD_BOTTOM =
-            90
-
-
-          const boardWidth =
-            BOARD_RIGHT -
-            BOARD_LEFT
-
-          const boardHeight =
-            BOARD_BOTTOM -
-            BOARD_TOP
-
-
-          const blockWidth =
-            boardWidth /
-            groupsPerRow
-
-          const blockHeight =
-            boardHeight /
-            groupRows
-
-
-          groupSeats.forEach(
-            (
-              seat,
-              index
-            ) => {
-              const groupIndex =
-                Math.floor(
-                  index /
-                    size
-                )
-
-
-              const insideIndex =
-                index %
-                size
-
-
-              const {
-                columns,
-                rows,
-              } =
-                getGroupShape(
-                  size
-                )
-
-
-              const groupColumn =
-                groupIndex %
-                groupsPerRow
-
-
-              const groupRow =
-                Math.floor(
-                  groupIndex /
-                    groupsPerRow
-                )
-
-
-              const groupStartX =
-                BOARD_LEFT +
-                groupColumn *
-                  blockWidth
-
-
-              const groupStartY =
-                BOARD_TOP +
-                groupRow *
-                  blockHeight
-
-
-              const seatColumn =
-                insideIndex %
-                columns
-
-
-              const seatRow =
-                Math.floor(
-                  insideIndex /
-                    columns
-                )
-
-
-              /*
-                Padding inside
-                each group block.
-              */
-
-              const paddingX =
-                Math.min(
-                  4,
-                  blockWidth *
-                    0.08
-                )
-
-              const paddingY =
-                Math.min(
-                  6,
-                  blockHeight *
-                    0.10
-                )
-
-
-              const usableWidth =
-                Math.max(
-                  5,
-                  blockWidth -
-                    paddingX * 2
-                )
-
-
-              const usableHeight =
-                Math.max(
-                  5,
-                  blockHeight -
-                    paddingY * 2
-                )
-
-
-              /*
-                Center of each
-                individual seat slot.
-              */
-
-              const slotWidth =
-                usableWidth /
-                columns
-
-              const slotHeight =
-                usableHeight /
-                rows
-
-
-              let x =
-                groupStartX +
-                paddingX +
-                seatColumn *
-                  slotWidth +
-                slotWidth / 2
-
-
-              let y =
-                groupStartY +
-                paddingY +
-                seatRow *
-                  slotHeight +
-                slotHeight / 2
-
-
-              /*
-                FloorPlan uses
-                left/top for the
-                seat position.
-
-                Move slightly back
-                so the seat itself
-                stays centered in
-                its slot.
-              */
-
-              x -= 3.4
-              y -= 4.5
-
-
-              x =
-                Math.max(
-                  3,
-                  Math.min(
-                    94,
-                    x
-                  )
-                )
-
-
-              y =
-                Math.max(
-                  5,
-                  Math.min(
-                    90,
-                    y
-                  )
-                )
-
-
-              next[
-                seat._id
-              ] = {
-                x:
-                  Math.round(
-                    x * 10
-                  ) / 10,
-
-                y:
-                  Math.round(
-                    y * 10
-                  ) / 10,
+          const result =
+            buildLayout(
+              preset,
+              group.seats,
+              {
+                groupSize,
+                perRow,
+                rowsPerBlock,
               }
-            }
+            )
+
+          Object.assign(
+            nextPositions,
+            result.positions
           )
+
+          // keep the drawings the owner made, replace old preset tables
+          const kept =
+            floorFor(
+              group.id
+            ).objects.filter(
+              (item) =>
+                !item.auto
+            )
+
+          nextEdits[
+            group.id
+          ] = {
+            ratio:
+              result.ratio,
+
+            seatPct:
+              result.seatPct,
+
+            objects: [
+              ...kept,
+              ...result.objects,
+            ],
+          }
         }
       )
 
-
       setLayout(
-        next
+        nextPositions
+      )
+
+      setFloorEdits(
+        (current) => ({
+          ...current,
+          ...nextEdits,
+        })
+      )
+
+      setResetKey(
+        (key) => key + 1
       )
     }
 
@@ -1127,13 +907,11 @@ export default function Seats() {
 
 
       try {
-        const positions =
-          []
+        let count = 0
 
-
-        hallGroups.forEach(
-          (group) => {
-            group.seats.forEach(
+        for (const group of hallGroups) {
+          const positions =
+            group.seats.map(
               (
                 seat,
                 index
@@ -1145,11 +923,11 @@ export default function Seats() {
                   seat.position ||
                   autoPos(
                     index,
-                    group.seats.length
+                    group.seats
+                      .length
                   )
 
-
-                positions.push({
+                return {
                   id:
                     seat._id,
 
@@ -1162,33 +940,53 @@ export default function Seats() {
                     Number(
                       position.y
                     ),
-                })
+                }
               }
             )
+
+          if (!positions.length) {
+            continue
           }
-        )
+
+          const floor =
+            floorFor(
+              group.id
+            )
+
+          await api(
+            '/seats/layout',
+            {
+              method:
+                'PUT',
+
+              body: {
+                hall:
+                  group.id,
+
+                positions,
+
+                objects:
+                  floor.objects,
+
+                ratio:
+                  floor.ratio,
+
+                seatPct:
+                  floor.seatPct,
+              },
+            }
+          )
+
+          count +=
+            positions.length
+        }
 
 
-        if (
-          !positions.length
-        ) {
+        if (!count) {
           throw new Error(
             'No seat positions to save.'
           )
         }
-
-
-        await api(
-          '/seats/layout',
-          {
-            method:
-              'PUT',
-
-            body: {
-              positions,
-            },
-          }
-        )
 
 
         setEditing(
@@ -1441,77 +1239,169 @@ export default function Seats() {
             ) : (
               <>
                 <div className="layout-info">
-                  Drag seats or use
-                  an even group
-                  layout.
+                  Drag seats, or pick
+                  a preset and press
+                  Apply. Rectangles,
+                  circles and text are
+                  saved with the layout.
                 </div>
 
 
                 <label className="group-select">
-                  Group
+                  Preset
 
                   <select
                     value={
-                      groupSize
+                      preset
                     }
                     onChange={(
                       event
                     ) =>
-                      setGroupSize(
-                        Number(
-                          event
-                            .target
-                            .value
-                        )
+                      setPreset(
+                        event
+                          .target
+                          .value
                       )
                     }
                   >
-                    <option value="2">
-                      2 Seats
-                    </option>
-
-                    <option value="4">
-                      4 Seats
-                    </option>
-
-                    <option value="6">
-                      6 Seats
-                    </option>
-
-                    <option value="8">
-                      8 Seats
-                    </option>
-
-                    <option value="10">
-                      10 Seats
-                    </option>
-
-                    <option value="12">
-                      12 Seats
-                    </option>
+                    {PRESETS.map(
+                      (item) => (
+                        <option
+                          key={
+                            item.id
+                          }
+                          value={
+                            item.id
+                          }
+                        >
+                          {
+                            item.name
+                          }
+                          {' - '}
+                          {
+                            item.hint
+                          }
+                        </option>
+                      )
+                    )}
                   </select>
                 </label>
 
 
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={
-                    applyGroupLayout
-                  }
-                >
-                  Apply Group
-                </button>
+                {PRESETS.find(
+                  (item) =>
+                    item.id ===
+                    preset
+                )?.needsRow && (
+                  <>
+                    <label className="group-select">
+                      Seats in one row
+
+                      <select
+                        value={perRow}
+                        onChange={(event) =>
+                          setPerRow(
+                            Number(
+                              event.target.value
+                            )
+                          )
+                        }
+                      >
+                        {[3, 4, 5, 6, 7, 8, 9, 10, 12].map(
+                          (n) => (
+                            <option
+                              key={n}
+                              value={n}
+                            >
+                              {n}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+
+                    <label className="group-select">
+                      Rows together
+
+                      <select
+                        value={rowsPerBlock}
+                        onChange={(event) =>
+                          setRowsPerBlock(
+                            Number(
+                              event.target.value
+                            )
+                          )
+                        }
+                      >
+                        {[1, 2, 3].map((n) => (
+                          <option
+                            key={n}
+                            value={n}
+                          >
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
+                )}
+
+
+                {PRESETS.find(
+                  (item) =>
+                    item.id ===
+                    preset
+                )?.needsGroup && (
+                  <label className="group-select">
+                    Seats per
+                    group
+
+                    <select
+                      value={
+                        groupSize
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setGroupSize(
+                          Number(
+                            event
+                              .target
+                              .value
+                          )
+                        )
+                      }
+                    >
+                      {[
+                        2, 4, 6,
+                        8, 10, 12,
+                      ].map(
+                        (size) => (
+                          <option
+                            key={
+                              size
+                            }
+                            value={
+                              size
+                            }
+                          >
+                            {size}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+                )}
 
 
                 <button
                   type="button"
                   className="ghost"
                   onClick={
-                    autoArrange
+                    applyPreset
                   }
                 >
-                  Auto Arrange
+                  Apply preset
                 </button>
 
 
@@ -1591,6 +1481,60 @@ export default function Seats() {
 
                 positions={
                   layout
+                }
+
+                objects={
+                  floorFor(
+                    group.id
+                  ).objects
+                }
+
+                ratio={
+                  floorFor(
+                    group.id
+                  ).ratio
+                }
+
+                seatPct={
+                  floorFor(
+                    group.id
+                  ).seatPct
+                }
+
+                onMoveMany={(
+                  updates
+                ) =>
+                  setLayout(
+                    (current) => {
+                      const next = {
+                        ...current,
+                      }
+
+                      updates.forEach(
+                        (u) => {
+                          next[u.id] = {
+                            x: u.x,
+                            y: u.y,
+                          }
+                        }
+                      )
+
+                      return next
+                    }
+                  )
+                }
+
+                resetKey={
+                  resetKey
+                }
+
+                onObjectsChange={(
+                  list
+                ) =>
+                  changeObjects(
+                    group.id,
+                    list
+                  )
                 }
 
                 onMove={(

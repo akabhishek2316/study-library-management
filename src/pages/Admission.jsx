@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { api } from '../api'
+import PasswordInput from '../components/PasswordInput'
 
-import './Admission.css'
 
 const emptyForm = {
   name: '',
@@ -222,9 +222,9 @@ export default function Admission() {
         return false
       }
 
-      if (form.password.length < 6) {
+      if (form.password.length < 8) {
         setError(
-          'Password must be at least 6 characters.'
+          'Password must be at least 8 characters.'
         )
         return false
       }
@@ -320,9 +320,9 @@ export default function Admission() {
       return false
     }
 
-    if (form.password.length < 6) {
+    if (form.password.length < 8) {
       setError(
-        'Password must be at least 6 characters.'
+        'Password must be at least 8 characters.'
       )
       setCurrentStep(0)
       return false
@@ -738,8 +738,8 @@ export default function Admission() {
                         onChange={set(
                           'password'
                         )}
-                        placeholder="Minimum 6 characters"
-                        minLength="6"
+                        placeholder="Minimum 8 characters"
+                        minLength="8"
                         required
                       />
 
@@ -1214,14 +1214,25 @@ function Field({
     <label className="admission-field">
       <span>{label}</span>
 
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        minLength={minLength}
-      />
+      {type === 'password' ? (
+        <PasswordInput
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          minLength={minLength}
+          autoComplete="new-password"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          minLength={minLength}
+        />
+      )}
     </label>
   )
 }

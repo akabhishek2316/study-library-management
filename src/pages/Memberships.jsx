@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+
+import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
 import {
   api,
   fmtDate,
@@ -22,6 +28,17 @@ export default function Memberships() {
   const [plans, setPlans] = useState([])
   const [freeSeats, setFreeSeats] = useState([])
   const [halls, setHalls] = useState([])
+
+  const list = usePaged(items, {
+    pageSize: 15,
+    searchText: (m) =>
+      `${m.student?.name} ${m.student?.phone} ${m.student?.email} ${m.hall?.name} ${m.seat?.number} ${m.plan?.name}`,
+    filters: {
+      hall: (m, v) => String(m.hall?._id || m.hall) === v,
+      due: (m, v) =>
+        v === 'due' ? m.due > 0 : m.due <= 0,
+    },
+  })
   const [selectedHall, setSelectedHall] = useState('')
 
   const [form, setForm] = useState({
@@ -375,6 +392,26 @@ export default function Memberships() {
           ))}
         </div>
 
+        <ListBar
+          list={list}
+          placeholder="Search student, phone, hall, seat or plan..."
+          filters={[
+            {
+              key: 'hall',
+              label: 'Hall',
+              options: halls.map((h) => [h._id, h.name]),
+            },
+            {
+              key: 'due',
+              label: 'Payment',
+              options: [
+                ['due', 'Has due'],
+                ['clear', 'Fully paid'],
+              ],
+            },
+          ]}
+        />
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -391,7 +428,7 @@ export default function Memberships() {
             </thead>
 
             <tbody>
-              {items.map((m) => (
+              {list.items.map((m) => (
                 <tr key={m._id}>
                   <td>
                     {m.student?.name}
@@ -511,19 +548,11 @@ export default function Memberships() {
                 </tr>
               ))}
 
-              {items.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="8"
-                    className="muted"
-                  >
-                    Nothing here.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        <Pager list={list} />
       </div>
     </>
   )

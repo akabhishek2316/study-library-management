@@ -1,8 +1,12 @@
 import { beginRequest, toast } from './effects'
 
+// Local development talks to your own backend by default,
+// so testing never touches the live database by accident.
 const BASE =
-  import.meta.env.VITE_API_URL
-  || 'http://localhost:5000/api'
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? 'http://localhost:5000/api'
+    : 'https://study-library-management-backend.onrender.com/api')
 
 // Requests that should not pop up a "Done" message
 // (they have their own feedback on the page, or are background work)
@@ -13,6 +17,9 @@ const QUIET = [
   /^\/attendance\/kiosk\//,
   /^\/payments\/razorpay\//,
 ]
+
+// One place for the API address (other pages import this)
+export const API_BASE = BASE
 
 const DONE = {
   POST: 'Done',
@@ -71,8 +78,11 @@ export async function api(
           : undefined,
       })
     } catch {
-      throw new Error(
-        'Cannot reach the server. Please check your internet and try again.'
+      throw Object.assign(
+        new Error(
+          'Cannot reach the server. Please check your internet and try again.'
+        ),
+        { status: 0 }
       )
     }
 
@@ -81,8 +91,25 @@ export async function api(
       .catch(() => ({}))
 
     if (!res.ok) {
-      throw new Error(
-        data.message || 'Request failed'
+      // Login expired (or the account was switched off): sign out cleanly.
+      // Wrong passwords on /auth/login and /auth/change-password are not "expired".
+      if (
+        res.status === 401 &&
+        auth &&
+        token &&
+        !path.startsWith('/auth/login') &&
+        !path.startsWith('/auth/change-password')
+      ) {
+        window.dispatchEvent(
+          new Event('auth-expired')
+        )
+      }
+
+      throw Object.assign(
+        new Error(
+          data.message || 'Request failed'
+        ),
+        { status: res.status }
       )
     }
 
@@ -213,7 +240,9 @@ async function saveAs(
 
     a.href = url
     a.download = filename
+    document.body.appendChild(a)
     a.click()
+    a.remove()
 
     setTimeout(
       () =>

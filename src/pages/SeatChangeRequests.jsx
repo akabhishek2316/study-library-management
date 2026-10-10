@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
+
+import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
 import { api, fmtDate } from '../api'
-import './SeatChangeRequests.css'
 
 const STATUS_FILTERS = [
   'pending',
@@ -12,6 +17,12 @@ const STATUS_FILTERS = [
 export default function SeatChangeRequests() {
   const [status, setStatus] = useState('pending')
   const [items, setItems] = useState([])
+
+  const paged = usePaged(items, {
+    pageSize: 15,
+    searchText: (r) =>
+      `${r.student?.name} ${r.student?.phone} ${r.hall?.name} ${r.currentSeat?.number} ${r.requestedSeat?.number}`,
+  })
 
   const [selected, setSelected] = useState(null)
   const [message, setMessage] = useState('')
@@ -81,7 +92,7 @@ export default function SeatChangeRequests() {
   }
 
   return (
-    <>
+    <div className="scr-page">
       <div className="page-head">
         <div>
           <h1>Seat Change Requests</h1>
@@ -130,6 +141,12 @@ export default function SeatChangeRequests() {
             Loading...
           </p>
         ) : (
+          <>
+          <ListBar
+            list={paged}
+            placeholder="Search student, phone or seat..."
+          />
+
           <div className="table-wrap">
             <table>
               <thead>
@@ -145,7 +162,7 @@ export default function SeatChangeRequests() {
               </thead>
 
               <tbody>
-                {items.map((request) => (
+                {paged.items.map((request) => (
                   <tr key={request._id}>
                     <td>
                       <b>
@@ -229,19 +246,12 @@ export default function SeatChangeRequests() {
                   </tr>
                 ))}
 
-                {items.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan="7"
-                      className="muted"
-                    >
-                      No seat change requests.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
+
+          <Pager list={paged} />
+          </>
         )}
       </div>
 
@@ -418,6 +428,6 @@ export default function SeatChangeRequests() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

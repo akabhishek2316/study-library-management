@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+
+import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
 import { Link } from 'react-router-dom'
 import {
   api,
@@ -22,7 +28,7 @@ export default function Attendance() {
       >
         <h1>Attendance</h1>
 
-        <Link to="/kiosk" target="_blank">
+        <Link to="/kiosk" target="_blank" rel="noreferrer">
           <button>Open QR display ↗</button>
         </Link>
       </div>
@@ -72,6 +78,16 @@ function Today({ setError }) {
   const [d, setD] = useState(null)
   const [students, setStudents] = useState([])
   const [pick, setPick] = useState('')
+
+  const todayPaged = usePaged(d?.sessions, {
+    pageSize: 15,
+    searchText: (s) => `${s.student?.name} ${s.student?.phone}`,
+  })
+
+  const notInPaged = usePaged(d?.notIn, {
+    pageSize: 15,
+    searchText: (n) => `${n.student?.name} ${n.student?.phone} ${n.seat?.number}`,
+  })
 
   const load = () =>
     api('/attendance/today')
@@ -184,6 +200,11 @@ function Today({ setError }) {
       <div className="card">
         <h3>Today's visits</h3>
 
+        <ListBar
+          list={todayPaged}
+          placeholder="Search student or phone..."
+        />
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -197,7 +218,7 @@ function Today({ setError }) {
             </thead>
 
             <tbody>
-              {d.sessions.map((s) => (
+              {todayPaged.items.map((s) => (
                 <tr key={s._id}>
                   <td>
                     {s.student?.name}
@@ -254,23 +275,20 @@ function Today({ setError }) {
                 </tr>
               ))}
 
-              {d.sessions.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="muted"
-                  >
-                    Nobody has checked in yet.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        <Pager list={todayPaged} />
       </div>
 
       <div className="card">
         <h3>Not in yet today</h3>
+
+        <ListBar
+          list={notInPaged}
+          placeholder="Search student, phone or seat..."
+        />
 
         <div className="table-wrap">
           <table>
@@ -284,7 +302,7 @@ function Today({ setError }) {
             </thead>
 
             <tbody>
-              {d.notIn.map((n) => (
+              {notInPaged.items.map((n) => (
                 <tr key={n.student._id}>
                   <td>
                     {n.student.name}
@@ -311,19 +329,11 @@ function Today({ setError }) {
                 </tr>
               ))}
 
-              {d.notIn.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="4"
-                    className="muted"
-                  >
-                    Everyone has come 🎉
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        <Pager list={notInPaged} />
       </div>
     </>
   )
@@ -332,6 +342,11 @@ function Today({ setError }) {
 function Report({ setError }) {
   const [month, setMonth] = useState(thisMonth())
   const [r, setR] = useState(null)
+
+  const rowsPaged = usePaged(r?.rows, {
+    pageSize: 20,
+    searchText: (x) => `${x.name} ${x.phone}`,
+  })
 
   useEffect(() => {
     api(`/attendance/report?month=${month}`)
@@ -369,52 +384,61 @@ function Report({ setError }) {
       {!r ? (
         <p className="muted">Loading...</p>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Days present</th>
-                <th>Total hours</th>
-                <th>Avg / day</th>
-                <th>Last visit</th>
-              </tr>
-            </thead>
+        <>
+          <ListBar
+            list={rowsPaged}
+            placeholder="Search student or phone..."
+          />
 
-            <tbody>
-              {r.rows.map((x) => (
-                <tr key={x.studentId}>
-                  <td>
-                    {x.name}
-                    <small>{x.phone}</small>
-                  </td>
-
-                  <td>
-                    {x.daysPresent}
-                  </td>
-
-                  <td>
-                    {fmtMins(x.minutes)}
-                  </td>
-
-                  <td>
-                    {x.daysPresent
-                      ? fmtMins(
-                        Math.round(
-                          x.minutes / x.daysPresent
-                        )
-                      )
-                      : '-'}
-                  </td>
-
-                  <td>
-                    {fmtDate(x.last)}
-                  </td>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Days present</th>
+                  <th>Total hours</th>
+                  <th>Avg / day</th>
+                  <th>Last visit</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {rowsPaged.items.map((x) => (
+                  <tr key={x.studentId}>
+                    <td>
+                      {x.name}
+                      <small>{x.phone}</small>
+                    </td>
+
+                    <td>
+                      {x.daysPresent}
+                    </td>
+
+                    <td>
+                      {fmtMins(x.minutes)}
+                    </td>
+
+                    <td>
+                      {x.daysPresent
+                        ? fmtMins(
+                          Math.round(
+                            x.minutes / x.daysPresent
+                          )
+                        )
+                        : '-'}
+                    </td>
+
+                    <td>
+                      {fmtDate(x.last)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <Pager list={rowsPaged} />
+        </>
       )}
     </div>
   )
@@ -423,6 +447,11 @@ function Report({ setError }) {
 function Absent({ setError }) {
   const [days, setDays] = useState(3)
   const [list, setList] = useState(null)
+
+  const absentPaged = usePaged(list, {
+    pageSize: 15,
+    searchText: (a) => `${a.student?.name} ${a.student?.phone}`,
+  })
 
   useEffect(() => {
     api(`/attendance/absent?days=${days}`)
@@ -457,70 +486,69 @@ function Absent({ setError }) {
       {!list ? (
         <p className="muted">Loading...</p>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Seat / Shift</th>
-                <th>Last seen</th>
-                <th>Days absent</th>
-                <th></th>
-              </tr>
-            </thead>
+        <>
+          <ListBar
+            list={absentPaged}
+            placeholder="Search student or phone..."
+          />
 
-            <tbody>
-              {list.map((a) => (
-                <tr key={a.student._id}>
-                  <td>
-                    {a.student.name}
-                    <small>{a.student.phone}</small>
-                  </td>
-
-                  <td>
-                    {a.seat?.number}
-                    <small>{a.shift?.name}</small>
-                  </td>
-
-                  <td>
-                    {a.lastSeen
-                      ? fmtDate(a.lastSeen)
-                      : 'Never'}
-                  </td>
-
-                  <td>
-                    <span className="badge red">
-                      {a.absentDays}
-                    </span>
-                  </td>
-
-                  <td>
-                    {a.student.phone && (
-                      <a
-                        href={`tel:${a.student.phone}`}
-                      >
-                        <button className="ghost">
-                          Call
-                        </button>
-                      </a>
-                    )}
-                  </td>
-                </tr>
-              ))}
-
-              {list.length === 0 && (
+          <div className="table-wrap">
+            <table>
+              <thead>
                 <tr>
-                  <td
-                    colSpan="5"
-                    className="muted"
-                  >
-                    No one is missing for {days}+ days 🎉
-                  </td>
+                  <th>Student</th>
+                  <th>Seat / Shift</th>
+                  <th>Last seen</th>
+                  <th>Days absent</th>
+                  <th></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody>
+                {absentPaged.items.map((a) => (
+                  <tr key={a.student._id}>
+                    <td>
+                      {a.student.name}
+                      <small>{a.student.phone}</small>
+                    </td>
+
+                    <td>
+                      {a.seat?.number}
+                      <small>{a.shift?.name}</small>
+                    </td>
+
+                    <td>
+                      {a.lastSeen
+                        ? fmtDate(a.lastSeen)
+                        : 'Never'}
+                    </td>
+
+                    <td>
+                      <span className="badge red">
+                        {a.absentDays}
+                      </span>
+                    </td>
+
+                    <td>
+                      {a.student.phone && (
+                        <a
+                          href={`tel:${a.student.phone}`}
+                        >
+                          <button className="ghost">
+                            Call
+                          </button>
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+
+              </tbody>
+            </table>
+          </div>
+
+          <Pager list={absentPaged} />
+        </>
       )}
     </div>
   )
@@ -529,6 +557,12 @@ function Absent({ setError }) {
 
 function Kiosks({ setError }) {
   const [kiosks, setKiosks] = useState([])
+
+  const kiosksPaged = usePaged(kiosks, {
+    pageSize: 10,
+    searchText: (k) =>
+      `${k.name} ${k.active ? 'active' : 'disabled'}`,
+  })
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
   const [activationCode, setActivationCode] =
@@ -722,7 +756,7 @@ function Kiosks({ setError }) {
             </thead>
 
             <tbody>
-              {kiosks.map((kiosk) => (
+              {kiosksPaged.items.map((kiosk) => (
                 <tr key={kiosk._id}>
                   <td>
                     <b>{kiosk.name}</b>
@@ -769,20 +803,23 @@ function Kiosks({ setError }) {
                 </tr>
               ))}
 
-              {kiosks.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="muted"
-                  >
-                    No attendance kiosks created
-                    yet.
-                  </td>
-                </tr>
-              )}
+              {kiosksPaged.items.length === 0 &&
+                kiosks.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="muted"
+                    >
+                      No attendance kiosks created
+                      yet.
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>
+
+        <Pager list={kiosksPaged} />
       </div>
     </>
   )

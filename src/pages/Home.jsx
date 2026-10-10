@@ -4,7 +4,6 @@ import { Link, Navigate } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../AuthContext'
 
-import './Home.css'
 
 const periodLabel = (period) => {
   if (period === 'monthly') return 'Monthly'
@@ -39,7 +38,7 @@ const HERO_SLIDES = [
 
   {
     image:
-      'https://images.pexels.com/photos/33745700/pexels-photo-33745700.jpeg?auto=compress&cs=tinysrgb&w=2400',
+      'https://images.pexels.com/photos/33745700/pexels-photo-33745700.jpeg?auto=compress&cs=tinysrgb&w=1400',
 
     eyebrow: 'BUILT FOR SERIOUS STUDY',
     title: 'STUDY MORE.',
@@ -50,7 +49,7 @@ const HERO_SLIDES = [
 
   {
     image:
-      'https://images.pexels.com/photos/4903651/pexels-photo-4903651.jpeg?auto=compress&cs=tinysrgb&w=2400',
+      'https://images.pexels.com/photos/4903651/pexels-photo-4903651.jpeg?auto=compress&cs=tinysrgb&w=1400',
 
     eyebrow: 'COMFORT • FOCUS • PRODUCTIVITY',
     title: 'A BETTER PLACE',

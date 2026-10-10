@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import './VerifyReceipt.css'
 
-const API_URL = import.meta.env.VITE_API_URL
+import { API_BASE as API_URL } from '../api'
 
 const formatDate = (value) => {
     if (!value) return 'Not available'

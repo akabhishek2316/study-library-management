@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
 import Icon from '../components/Icon'
+import PasswordInput from '../components/PasswordInput'
+
 
 const FEATURES = [
   [
@@ -37,45 +39,45 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
 
   if (user) {
-  if (user.role === 'student') {
+    if (user.role === 'student') {
+      return (
+        <Navigate
+          to="/student"
+          replace
+        />
+      )
+    }
+
     return (
       <Navigate
-        to="/student"
+        to="/"
         replace
       />
     )
   }
 
-  return (
-    <Navigate
-      to="/"
-      replace
-    />
-  )
-}
-
   const submit = async (e) => {
-  e.preventDefault()
-  setBusy(true)
-  setError('')
+    e.preventDefault()
+    setBusy(true)
+    setError('')
 
-  try {
-    const loggedInUser = await login(
-      email,
-      password
-    )
+    try {
+      const loggedInUser = await login(
+        email,
+        password
+      )
 
-    if (loggedInUser.role === 'student') {
-      navigate('/student')
-    } else {
-      navigate('/')
+      if (loggedInUser.role === 'student') {
+        navigate('/student')
+      } else {
+        navigate('/')
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
     }
-  } catch (err) {
-    setError(err.message)
-  } finally {
-    setBusy(false)
   }
-}
 
   return (
     <div className="auth">
@@ -201,8 +203,7 @@ export default function Login() {
           <label>
             Password
 
-            <input
-              type="password"
+            <PasswordInput
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -215,9 +216,12 @@ export default function Login() {
             {busy ? 'Signing in...' : 'Sign in'}
           </button>
 
-          <small className="auth-note">
-            New student? Your account is created by the library desk.
-          </small>
+          <div className="auth-note">
+            <span>New student?</span>{' '}
+            <Link to="/admission" >
+              Apply for admission online
+            </Link>
+          </div>
         </form>
       </main>
     </div>

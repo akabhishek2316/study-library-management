@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, fmtDate } from '../api'
+import { Pager, usePaged } from '../components/ListTools'
 
 export default function MyFeedback() {
   const [list, setList] = useState([])
@@ -12,6 +13,8 @@ export default function MyFeedback() {
 
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
+
+  const paged = usePaged(list, { pageSize: 5 })
 
   const load = () =>
     api('/feedback/mine')
@@ -134,7 +137,7 @@ export default function MyFeedback() {
       <div className="card">
         <h3>My messages</h3>
 
-        {list.map((f) => (
+        {paged.items.map((f) => (
           <div
             className="fb"
             key={f._id}
@@ -173,11 +176,7 @@ export default function MyFeedback() {
           </div>
         ))}
 
-        {list.length === 0 && (
-          <p className="muted">
-            You haven't sent anything yet.
-          </p>
-        )}
+        <Pager list={paged} sizes={[5, 10, 20]} />
       </div>
     </>
   )

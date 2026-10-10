@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { api, fmtDate } from '../api'
+import { Pager, usePaged } from '../components/ListTools'
 
 export default function MyNotices() {
   const [list, setList] = useState(null)
   const [error, setError] = useState('')
+
+  const paged = usePaged(list, { pageSize: 8 })
 
   useEffect(() => {
     api('/notices')
@@ -27,7 +30,7 @@ export default function MyNotices() {
     <>
       <h1>Notices</h1>
 
-      {list.map((n) => (
+      {paged.items.map((n) => (
         <div
           className={`card notice-card ${
             n.pinned ? 'pinned' : ''
@@ -49,13 +52,7 @@ export default function MyNotices() {
         </div>
       ))}
 
-      {list.length === 0 && (
-        <div className="card">
-          <p className="muted">
-            No notices right now.
-          </p>
-        </div>
-      )}
+      <Pager list={paged} sizes={[8, 16, 32]} />
     </>
   )
 }

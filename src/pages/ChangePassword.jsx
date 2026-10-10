@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import PasswordInput from '../components/PasswordInput'
 
 export default function ChangePassword() {
     const navigate = useNavigate()
@@ -31,9 +32,9 @@ export default function ChangePassword() {
         setError('')
         setSuccess('')
 
-        if (newPassword.length < 6) {
+        if (newPassword.length < 8) {
             setError(
-                'New password must be at least 6 characters.'
+                'New password must be at least 8 characters.'
             )
             return
         }
@@ -57,7 +58,7 @@ export default function ChangePassword() {
         setSaving(true)
 
         try {
-            await api(
+            const result = await api(
                 '/auth/change-password',
                 {
                     method: 'POST',
@@ -67,6 +68,11 @@ export default function ChangePassword() {
                     },
                 }
             )
+
+            // old tokens stop working after a password change: keep this session alive
+            if (result?.token) {
+                localStorage.setItem('token', result.token)
+            }
 
             setCurrentPassword('')
             setNewPassword('')
@@ -141,8 +147,7 @@ export default function ChangePassword() {
                         <label>
                             Current password
 
-                            <input
-                                type="password"
+                            <PasswordInput
                                 value={currentPassword}
                                 onChange={(e) =>
                                     setCurrentPassword(
@@ -157,8 +162,7 @@ export default function ChangePassword() {
                         <label>
                             New password
 
-                            <input
-                                type="password"
+                            <PasswordInput
                                 value={newPassword}
                                 onChange={(e) =>
                                     setNewPassword(
@@ -166,7 +170,7 @@ export default function ChangePassword() {
                                     )
                                 }
                                 autoComplete="new-password"
-                                minLength={6}
+                                minLength={8}
                                 required
                             />
                         </label>
@@ -174,8 +178,7 @@ export default function ChangePassword() {
                         <label>
                             Confirm new password
 
-                            <input
-                                type="password"
+                            <PasswordInput
                                 value={confirmPassword}
                                 onChange={(e) =>
                                     setConfirmPassword(
@@ -183,7 +186,7 @@ export default function ChangePassword() {
                                     )
                                 }
                                 autoComplete="new-password"
-                                minLength={6}
+                                minLength={8}
                                 required
                             />
                         </label>

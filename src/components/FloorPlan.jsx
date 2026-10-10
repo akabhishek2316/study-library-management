@@ -4,7 +4,11 @@ import {
   useState,
 } from 'react'
 
-import './FloorPlan.css'
+import {
+  autoPos,
+  defaultRatio,
+} from './floorLayouts'
+
 
 // ==================================================
 // EDITOR SETTINGS
@@ -13,11 +17,11 @@ import './FloorPlan.css'
 const GRID_SIZE = 11
 const ALIGN_THRESHOLD = 7
 
-const MIN_X = 1
-const MAX_X = 99
+const MIN_X = 4
+const MAX_X = 96
 
-const MIN_Y = 2
-const MAX_Y = 98
+const MIN_Y = 4
+const MAX_Y = 96
 
 const MIN_OBJECT_WIDTH = 5
 const MIN_OBJECT_HEIGHT = 4
@@ -58,103 +62,8 @@ const safePosition = (
 // minimum horizontal spacing maintain hoti hai.
 // ==================================================
 
-export function autoPos(
-  index,
-  total
-) {
-  if (!total) {
-    return {
-      x: 50,
-      y: 50,
-    }
-  }
-
-  const marginX = 8
-  const marginY = 10
-
-  // Seat CSS responsive width ko dhyan me
-  // rakhkar minimum center-to-center gap.
-  const minStepX = 11.5
-  const minStepY = 11.5
-
-  // Maximum 8 columns.
-  let columns = Math.min(
-    8,
-    Math.ceil(
-      Math.sqrt(total)
-    )
-  )
-
-  let rows = Math.ceil(
-    total / columns
-  )
-
-  // Agar columns bahut close ho rahe hain
-  // to columns kam karo.
-  while (
-    columns > 1
-  ) {
-    const stepX =
-      (100 - marginX * 2) /
-      (columns - 1)
-
-    if (
-      stepX >=
-      minStepX
-    ) {
-      break
-    }
-
-    columns -= 1
-
-    rows = Math.ceil(
-      total / columns
-    )
-  }
-
-  const stepX =
-    columns === 1
-      ? 0
-      : (
-          100 -
-          marginX * 2
-        ) /
-        (columns - 1)
-
-  const stepY =
-    rows === 1
-      ? 0
-      : (
-          100 -
-          marginY * 2
-        ) /
-        (rows - 1)
-
-  const column =
-    index % columns
-
-  const row =
-    Math.floor(
-      index / columns
-    )
-
-  const x =
-    columns === 1
-      ? 50
-      : marginX +
-        column * stepX
-
-  const y =
-    rows === 1
-      ? 50
-      : marginY +
-        row * stepY
-
-  return safePosition({
-    x,
-    y,
-  })
-}
+// autoPos() now lives in floorLayouts.js (same spacing rules as the presets)
+export { autoPos }
 
 // ==================================================
 // SNAP
@@ -383,6 +292,21 @@ export default function FloorPlan({
   editable = false,
   onMove,
   positions = {},
+
+  // floor decoration (rectangles, circles, text) lives in the database.
+  // The parent owns it: it passes the saved list in and is told about edits.
+  objects = null,
+  onObjectsChange = null,
+  resetKey = 0,
+
+  // board height / width, so a preset can make the board as tall as it needs
+  ratio = null,
+
+  // moves several seats at once: [{ id, x, y }, ...]
+  onMoveMany = null,
+
+  // dense layouts: seat width as % of the board width (null = normal size)
+  seatPct = null,
 }) {
   const boardRef =
     useRef(null)
@@ -393,6 +317,23 @@ export default function FloorPlan({
 
   const dragging =
     useRef(null)
+
+  // ==================================================
+  // MULTI-SELECT (move a whole row / column together)
+  //   mode "single": drag one seat (Shift+click adds seats)
+  //   mode "row":    pressing a seat selects its whole row
+  //   mode "column": pressing a seat selects its whole column
+  // ==================================================
+
+  const [
+    selectMode,
+    setSelectMode,
+  ] = useState('single')
+
+  const [
+    selectedSeatIds,
+    setSelectedSeatIds,
+  ] = useState([])
 
   // ==================================================
   // OBJECT DRAG
@@ -453,7 +394,11 @@ export default function FloorPlan({
   const [
     floorObjects,
     setFloorObjects,
-  ] = useState([])
+  ] = useState(() =>
+    Array.isArray(objects)
+      ? objects
+      : []
+  )
 
   // ==================================================
   // TOTAL
@@ -493,36 +438,21 @@ export default function FloorPlan({
       )
     })()
 
-  const storageKey =
-    `floor-plan-objects-${hallId}`
-
   // ==================================================
-  // RESPONSIVE BOARD HEIGHT
+  // BOARD SIZE
+  // The saved ratio (or the one a preset asked for) wins; otherwise
+  // use the same default the "Grid" preset would need.
   // ==================================================
-
-  const rows =
-    Math.max(
-      1,
-      Math.ceil(
-        Math.max(
-          1,
-          total
-        ) / 6
-      )
-    )
 
   const boardHeightRatio =
     clamp(
-      0.72 +
-        Math.max(
-          0,
-          rows - 6
-        ) *
-          0.032,
+      Number(ratio) > 0
+        ? Number(ratio)
+        : defaultRatio(total),
 
-      0.72,
+      0.3,
 
-      1.65
+      12
     )
 
   const boardAspectRatio =
@@ -530,75 +460,74 @@ export default function FloorPlan({
     boardHeightRatio
 
   // ==================================================
-  // LOAD FLOOR OBJECTS
+  // FLOOR OBJECTS  (loaded from / reported to the parent, no localStorage)
   // ==================================================
 
+  const fromParent =
+    useRef(null)
+
+  const currentObjects =
+    useRef([])
+
+  currentObjects.current =
+    floorObjects
+
   useEffect(() => {
-    try {
-      const saved =
-        localStorage.getItem(
-          storageKey
-        )
+    const list =
+      Array.isArray(objects)
+        ? objects
+        : []
 
-      if (!saved) {
-        setFloorObjects([])
-
-        setSelectedObjectId(
-          null
-        )
-
-        return
-      }
-
-      const parsed =
-        JSON.parse(
-          saved
-        )
-
-      if (
-        Array.isArray(
-          parsed
-        )
-      ) {
-        setFloorObjects(
-          parsed
-        )
-      } else {
-        setFloorObjects([])
-      }
-
-      setSelectedObjectId(
-        null
-      )
-    } catch {
-      setFloorObjects([])
-
-      setSelectedObjectId(
-        null
-      )
+    // the list came back from our own edit: nothing to reload
+    if (
+      list ===
+      currentObjects.current
+    ) {
+      return
     }
+
+    fromParent.current =
+      list
+
+    setFloorObjects(
+      list
+    )
   }, [
-    storageKey,
+    hallId,
+    resetKey,
+    objects,
   ])
 
-  // ==================================================
-  // SAVE FLOOR OBJECTS
-  // ==================================================
+  useEffect(() => {
+    setSelectedObjectId(
+      null
+    )
+
+    setSelectedSeatIds(
+      []
+    )
+  }, [
+    hallId,
+    resetKey,
+    editable,
+  ])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(
-          floorObjects
-        )
-      )
-    } catch {
-      // Ignore
+    if (
+      !onObjectsChange ||
+      floorObjects ===
+        fromParent.current ||
+      floorObjects ===
+        objects
+    ) {
+      return
     }
+
+    onObjectsChange(
+      floorObjects
+    )
   }, [
     floorObjects,
-    storageKey,
   ])
 
   // ==================================================
@@ -729,6 +658,126 @@ export default function FloorPlan({
     const boardRect =
       board.getBoundingClientRect()
 
+    // ---- Shift / Ctrl / Cmd + press: add or remove this seat from the selection
+    if (
+      event.shiftKey ||
+      event.ctrlKey ||
+      event.metaKey
+    ) {
+      setSelectedSeatIds(
+        (current) =>
+          current.includes(
+            seat._id
+          )
+            ? current.filter(
+                (id) =>
+                  id !==
+                  seat._id
+              )
+            : [
+                ...current,
+                seat._id,
+              ]
+      )
+
+      return
+    }
+
+    // ---- which seats move together?
+    const where = (item) => {
+      const index =
+        seats.findIndex(
+          (s) =>
+            s._id ===
+            item._id
+        )
+
+      return getPosition(
+        item,
+        index
+      )
+    }
+
+    let ids = selectedSeatIds
+
+    if (
+      selectMode === 'row' ||
+      selectMode === 'column'
+    ) {
+      const here =
+        where(seat)
+
+      // two seats are on the same row/column when their centres are
+      // less than half a seat apart
+      const toleranceX =
+        (seatRect.width /
+          2 /
+          boardRect.width) *
+        100
+
+      const toleranceY =
+        (seatRect.height /
+          2 /
+          boardRect.height) *
+        100
+
+      ids = seats
+        .filter((item) => {
+          const p =
+            where(item)
+
+          return selectMode ===
+            'row'
+            ? Math.abs(
+                p.y - here.y
+              ) <= toleranceY
+            : Math.abs(
+                p.x - here.x
+              ) <= toleranceX
+        })
+        .map(
+          (item) => item._id
+        )
+
+      setSelectedSeatIds(
+        ids
+      )
+    } else if (
+      !ids.includes(
+        seat._id
+      )
+    ) {
+      // pressing a seat that is not selected: back to moving one seat
+      ids = []
+
+      setSelectedSeatIds(
+        []
+      )
+    }
+
+    const group =
+      ids.length > 1 &&
+      ids.includes(seat._id)
+        ? ids
+            .map((id) => {
+              const item =
+                seats.find(
+                  (s) =>
+                    s._id === id
+                )
+
+              return item
+                ? {
+                    id,
+                    ...where(
+                      item
+                    ),
+                  }
+                : null
+            })
+            .filter(Boolean)
+        : null
+
     const seatCenterX =
       seatRect.left +
       seatRect.width / 2
@@ -738,6 +787,14 @@ export default function FloorPlan({
       seatRect.height / 2
 
     dragging.current = {
+      group,
+
+      startClientX:
+        event.clientX,
+
+      startClientY:
+        event.clientY,
+
       id:
         seat._id,
 
@@ -931,6 +988,99 @@ export default function FloorPlan({
         )
 
       if (!size) {
+        return
+      }
+
+      // ------------------------------------------------
+      // MOVE A WHOLE ROW / COLUMN / SELECTION TOGETHER
+      // ------------------------------------------------
+
+      if (drag.group) {
+        const halfW =
+          (size.width /
+            2 /
+            rect.width) *
+          100
+
+        const halfH =
+          (size.height /
+            2 /
+            rect.height) *
+          100
+
+        const xs =
+          drag.group.map(
+            (g) => g.x
+          )
+
+        const ys =
+          drag.group.map(
+            (g) => g.y
+          )
+
+        // the group stops when its first seat touches a board edge
+        const dx = clamp(
+          ((event.clientX -
+            drag.startClientX) /
+            rect.width) *
+            100,
+
+          halfW -
+            Math.min(...xs),
+
+          100 -
+            halfW -
+            Math.max(...xs)
+        )
+
+        const dy = clamp(
+          ((event.clientY -
+            drag.startClientY) /
+            rect.height) *
+            100,
+
+          halfH -
+            Math.min(...ys),
+
+          100 -
+            halfH -
+            Math.max(...ys)
+        )
+
+        const updates =
+          drag.group.map(
+            (g) => ({
+              id: g.id,
+
+              x:
+                Math.round(
+                  (g.x + dx) *
+                    100
+                ) / 100,
+
+              y:
+                Math.round(
+                  (g.y + dy) *
+                    100
+                ) / 100,
+            })
+          )
+
+        if (onMoveMany) {
+          onMoveMany(
+            updates
+          )
+        } else {
+          updates.forEach(
+            (u) =>
+              onMove?.(
+                u.id,
+                u.x,
+                u.y
+              )
+          )
+        }
+
         return
       }
 
@@ -1991,8 +2141,61 @@ if (bestHorizontal) {
             🗑 Delete
           </button>
 
+          <span className="floor-tool-divider" />
+
+          {[
+            ['single', '☝ One seat'],
+            ['row', '⇔ Whole row'],
+            ['column', '⇕ Whole column'],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              className={`floor-tool ${
+                selectMode === mode
+                  ? 'active'
+                  : ''
+              }`}
+              onClick={() => {
+                setSelectMode(mode)
+                setSelectedSeatIds([])
+              }}
+            >
+              {label}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="floor-tool"
+            onClick={() =>
+              setSelectedSeatIds(
+                seats.map((s) => s._id)
+              )
+            }
+          >
+            Select all
+          </button>
+
+          <button
+            type="button"
+            className="floor-tool"
+            disabled={
+              !selectedSeatIds.length
+            }
+            onClick={() =>
+              setSelectedSeatIds([])
+            }
+          >
+            Clear ({selectedSeatIds.length})
+          </button>
+
           <span className="floor-editor-help">
-            Drag • Resize • Double-click Text
+            {selectMode === 'row'
+              ? 'Press a seat: its whole row moves together.'
+              : selectMode === 'column'
+              ? 'Press a seat: its whole column moves together.'
+              : 'Drag a seat. Shift+click adds seats; drag one to move all selected.'}
           </span>
         </div>
       )}
@@ -2006,6 +2209,10 @@ if (bestHorizontal) {
           boardRef
         }
         className={`plan ${
+          seatPct
+            ? 'dense'
+            : ''
+        } ${
           editable
             ? 'editing'
             : ''
@@ -2016,6 +2223,9 @@ if (bestHorizontal) {
             : ''
         }`}
         style={{
+          '--seat-pct':
+            seatPct || undefined,
+
           aspectRatio:
             `${boardAspectRatio} / 1`,
 
@@ -2038,6 +2248,10 @@ if (bestHorizontal) {
           ) {
             setSelectedObjectId(
               null
+            )
+
+            setSelectedSeatIds(
+              []
             )
           }
         }}
@@ -2261,6 +2475,12 @@ if (bestHorizontal) {
                 } ${
                   draggingThis
                     ? 'dragging'
+                    : ''
+                } ${
+                  selectedSeatIds.includes(
+                    seat._id
+                  )
+                    ? 'multi-selected'
                     : ''
                 }`}
                 style={{

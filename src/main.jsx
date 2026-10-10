@@ -4,17 +4,20 @@ import { BrowserRouter } from 'react-router-dom'
 
 import { AuthProvider } from './AuthContext'
 import App from './App'
+import ErrorBoundary from './components/ErrorBoundary'
 
 import './styles.css'
 
 ReactDOM.createRoot(
   document.getElementById('root')
 ).render(
-  <BrowserRouter>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </BrowserRouter>
+  <ErrorBoundary>
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
+  </ErrorBoundary>
 )
 
 // Installable app + fast reopen

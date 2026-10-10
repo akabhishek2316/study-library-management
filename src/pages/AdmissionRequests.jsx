@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
 
+import {
+  Pager,
+  usePaged,
+} from '../components/ListTools'
+
+import { useAuth } from '../AuthContext'
+
 import { api, fmtDate } from '../api'
 
-// import './AdmissionRequests.css'
 
 const STATUS_FILTERS = [
   'all',
@@ -11,6 +17,7 @@ const STATUS_FILTERS = [
 ]
 
 export default function AdmissionRequests() {
+  const { user } = useAuth()
   const [list, setList] = useState([])
   const [status, setStatus] = useState('all')
   const [q, setQ] = useState('')
@@ -128,6 +135,26 @@ export default function AdmissionRequests() {
     )
   }
 
+  const removeRequest = async (request) => {
+    if (
+      !confirm(
+        `Delete the rejected request of ${request.user?.name}? This cannot be undone.`
+      )
+    ) {
+      return
+    }
+
+    try {
+      await api(`/admissions/${request._id}`, {
+        method: 'DELETE',
+      })
+
+      await load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   const filteredList = list.filter(
     (request) => {
       if (
@@ -166,6 +193,10 @@ export default function AdmissionRequests() {
       )
     }
   )
+
+  const paged = usePaged(filteredList, {
+    pageSize: 15,
+  })
 
   return (
     <>
@@ -220,7 +251,7 @@ export default function AdmissionRequests() {
             </thead>
 
             <tbody>
-              {filteredList.map(
+              {paged.items.map(
                 (request) => (
                   <tr key={request._id}>
                     <td>
@@ -324,27 +355,29 @@ export default function AdmissionRequests() {
           : 'Reject'}
       </button>
     )}
+
+    {request.status === 'rejected' &&
+      user?.role === 'owner' && (
+        <button
+          className="ghost danger"
+          onClick={() =>
+            removeRequest(request)
+          }
+        >
+          Delete
+        </button>
+      )}
   </div>
 </td>
                   </tr>
                 )
               )}
 
-              {filteredList.length ===
-                0 && (
-                <tr>
-                  <td
-                    colSpan="7"
-                    className="muted"
-                  >
-                    No admission requests
-                    found.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        <Pager list={paged} />
       </div>
 
       {selectedRequest && (

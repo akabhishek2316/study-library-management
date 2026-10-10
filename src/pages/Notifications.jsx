@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+
+import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
 import { useNavigate } from 'react-router-dom'
 import { api, fmtDateTime } from '../api'
 
@@ -18,6 +24,46 @@ export default function Notifications() {
 
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+
+  const paged = usePaged(data?.items, {
+    pageSize: 15,
+    searchText: (n) => `${n.title} ${n.message}`,
+    filters: {
+      state: (n, v) => (v === 'unread' ? !n.read : n.read),
+    },
+  })
+
+  const removeOne = async (n) => {
+    try {
+      await api(`/notifications/${n._id}`, {
+        method: 'DELETE',
+      })
+
+      window.dispatchEvent(
+        new Event('notifications-updated')
+      )
+
+      load()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  const clearRead = async () => {
+    try {
+      await api('/notifications/read', {
+        method: 'DELETE',
+      })
+
+      window.dispatchEvent(
+        new Event('notifications-updated')
+      )
+
+      load()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
 
   const load = () =>
     api('/notifications')
@@ -109,16 +155,43 @@ export default function Notifications() {
     </button>
   )}
 
+  {data.items.some((n) => n.read) && (
+    <button
+      className="ghost"
+      onClick={clearRead}
+    >
+      Clear read
+    </button>
+  )}
+
   {data.items.length > 0 && (
     <button
       className="danger"
-      onClick={clearAll}
+      onClick={() =>
+        confirm('Delete ALL notifications?') &&
+        clearAll()
+      }
     >
-      Clear Notifications
+      Clear all
     </button>
   )}
 </div>
       </div>
+
+      <ListBar
+        list={paged}
+        placeholder="Search notifications..."
+        filters={[
+          {
+            key: 'state',
+            label: 'Show',
+            options: [
+              ['unread', 'Unread'],
+              ['read', 'Read'],
+            ],
+          },
+        ]}
+      />
 
       <div
         className="card"
@@ -126,9 +199,12 @@ export default function Notifications() {
           padding: 0,
         }}
       >
-        {data.items.map((n) => (
-          <button
+        {paged.items.map((n) => (
+          <div
             key={n._id}
+            className="notif-row"
+          >
+          <button
             className={`notif ${
               n.read ? '' : 'unread'
             }`}
@@ -154,19 +230,22 @@ export default function Notifications() {
               <i className="dot" />
             )}
           </button>
+
+          <button
+            type="button"
+            className="notif-delete ghost"
+            aria-label="Delete notification"
+            title="Delete"
+            onClick={() => removeOne(n)}
+          >
+            ×
+          </button>
+          </div>
         ))}
 
-        {data.items.length === 0 && (
-          <p
-            className="muted"
-            style={{
-              padding: 18,
-            }}
-          >
-            No notifications yet.
-          </p>
-        )}
       </div>
+
+      <Pager list={paged} />
     </>
   )
 }

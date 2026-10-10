@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, fmtDate } from '../api'
-import './ChangeSeat.css'
 
 export default function ChangeSeat() {
   const [data, setData] = useState(null)
@@ -111,6 +110,7 @@ export default function ChangeSeat() {
 
   if (!membership) {
     return (
+      <div className="change-seat">
       <div className="page-head">
         <div>
           <h1>Change Seat</h1>
@@ -124,6 +124,7 @@ export default function ChangeSeat() {
             Back to Dashboard
           </Link>
         </div>
+      </div>
       </div>
     )
   }
@@ -172,7 +173,7 @@ export default function ChangeSeat() {
   }
 
   return (
-    <>
+    <div className="change-seat">
       <div className="page-head">
         <div>
           <h1>Change Seat</h1>
@@ -485,6 +486,6 @@ export default function ChangeSeat() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

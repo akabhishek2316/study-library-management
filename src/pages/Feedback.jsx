@@ -1,11 +1,40 @@
 import { useEffect, useState } from 'react'
 import { api, fmtDate } from '../api'
 
+import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
+
 export default function Feedback() {
   const [status, setStatus] = useState('open')
   const [list, setList] = useState([])
   const [replies, setReplies] = useState({})
   const [error, setError] = useState('')
+
+  const paged = usePaged(list, {
+    pageSize: 10,
+    searchText: (f) =>
+      `${f.subject} ${f.message} ${f.student?.name} ${f.student?.phone}`,
+    filters: {
+      type: (f, v) => f.type === v,
+    },
+  })
+
+  const remove = async (f) => {
+    if (!confirm('Delete this feedback permanently?')) return
+
+    try {
+      await api(`/feedback/${f._id}`, {
+        method: 'DELETE',
+      })
+
+      load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   const load = () =>
     api(`/feedback?status=${status}`)
@@ -58,7 +87,23 @@ export default function Feedback() {
         ))}
       </div>
 
-      {list.map((f) => (
+      <ListBar
+        list={paged}
+        placeholder="Search subject, message or student..."
+        filters={[
+          {
+            key: 'type',
+            label: 'Type',
+            options: [
+              ['complaint', 'Complaint'],
+              ['feedback', 'Feedback'],
+              ['suggestion', 'Suggestion'],
+            ],
+          },
+        ]}
+      />
+
+      {paged.items.map((f) => (
         <div className="card" key={f._id}>
           <div
             className="row-form"
@@ -133,27 +178,30 @@ export default function Feedback() {
               </div>
             </>
           ) : (
-            <button
-              className="ghost"
-              onClick={() =>
-                patch(f._id, {
-                  status: 'open',
-                })
-              }
-            >
-              Reopen
-            </button>
+            <div className="actions">
+              <button
+                className="ghost"
+                onClick={() =>
+                  patch(f._id, {
+                    status: 'open',
+                  })
+                }
+              >
+                Reopen
+              </button>
+
+              <button
+                className="ghost danger"
+                onClick={() => remove(f)}
+              >
+                Delete
+              </button>
+            </div>
           )}
         </div>
       ))}
 
-      {list.length === 0 && (
-        <div className="card">
-          <p className="muted">
-            Nothing {status} 🎉
-          </p>
-        </div>
-      )}
+      <Pager list={paged} />
     </>
   )
 }

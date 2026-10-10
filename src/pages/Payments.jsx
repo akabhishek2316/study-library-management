@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+
+import {
+  ListBar,
+  Pager,
+  usePaged,
+} from '../components/ListTools'
 import {
   api,
   downloadReceipt,
@@ -23,17 +29,34 @@ export default function Payments() {
     },
   })
 
-  const [filters, setFilters] = useState({
+  const [filters, setFiltersRaw] = useState({
     from: '',
     to: '',
     method: '',
   })
 
+  const setFilters = (next) => {
+    setHistPage(1)
+    setFiltersRaw(next)
+  }
+
   const [form, setForm] = useState({
     membershipId: '',
     amount: '',
     method: 'cash',
+    transactionId: '',
     note: '',
+  })
+
+  // payment history is paged on the server (it can be thousands of rows)
+  const [histPage, setHistPage] = useState(1)
+  const [histSearch, setHistSearch] = useState('')
+  const [histSearchInput, setHistSearchInput] = useState('')
+
+  const dueList = usePaged(dues, {
+    pageSize: 15,
+    searchText: (d) =>
+      `${d.student?.name} ${d.student?.phone} ${d.hall?.name} ${d.seat?.number} ${d.plan?.name}`,
   })
 
   const [error, setError] = useState('')
@@ -46,9 +69,11 @@ export default function Payments() {
 
   const loadHist = () => {
     const qs = new URLSearchParams(
-      Object.entries(filters).filter(
-        ([, v]) => v
-      )
+      Object.entries({
+        ...filters,
+        search: histSearch,
+        page: histPage,
+      }).filter(([, v]) => v)
     ).toString()
 
     return api(`/payments?${qs}`)
@@ -62,7 +87,17 @@ export default function Payments() {
 
   useEffect(() => {
     loadHist()
-  }, [filters])
+  }, [filters, histPage, histSearch])
+
+  // wait a moment after typing before asking the server
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setHistSearch(histSearchInput.trim())
+      setHistPage(1)
+    }, 350)
+
+    return () => clearTimeout(timer)
+  }, [histSearchInput])
 
   const pick = (id) => {
     const m = dues.find(
@@ -73,6 +108,7 @@ export default function Payments() {
       ...f,
       membershipId: id,
       amount: m ? m.due : '',
+      transactionId: '',
     }))
   }
 
@@ -96,6 +132,7 @@ export default function Payments() {
         membershipId: '',
         amount: '',
         method: form.method,
+        transactionId: '',
         note: '',
       })
 
@@ -195,9 +232,9 @@ export default function Payments() {
                 value={d._id}
               >
                 {d.student?.name} ·{' '}
-{d.membership?.hall?.name || d.hall?.name || '-'} · Seat{' '}
-{d.seat?.number || '-'} · due{' '}
-{rupees(d.due)}
+                {d.membership?.hall?.name || d.hall?.name || '-'} · Seat{' '}
+                {d.seat?.number || '-'} · due{' '}
+                {rupees(d.due)}
               </option>
             ))}
           </select>
@@ -230,6 +267,10 @@ export default function Payments() {
               setForm({
                 ...form,
                 method: e.target.value,
+                transactionId:
+                  e.target.value === 'cash'
+                    ? ''
+                    : form.transactionId,
               })
             }
           >
@@ -250,6 +291,41 @@ export default function Payments() {
             </option>
           </select>
         </label>
+
+        {form.method !== 'cash' && (
+          <label>
+            {form.method === 'upi'
+              ? 'UPI transaction ID / UTR'
+              : form.method === 'bank'
+                ? 'Bank reference / UTR / cheque no.'
+                : 'Card approval code / RRN'}
+
+            <input
+              value={form.transactionId}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  transactionId: e.target.value
+                    .replace(/[^A-Za-z0-9\-_/]/g, '')
+                    .toUpperCase(),
+                })
+              }
+              placeholder={
+                form.method === 'upi'
+                  ? 'e.g. 426512345678'
+                  : 'required'
+              }
+              minLength={6}
+              maxLength={40}
+              required
+              autoComplete="off"
+            />
+
+            <small className="muted">
+              Printed on the receipt. Each ID can be used only once.
+            </small>
+          </label>
+        )}
 
         <label>
           Note
@@ -299,6 +375,11 @@ export default function Payments() {
               <b>{rupees(totalDue)}</b>
             </p>
 
+            <ListBar
+              list={dueList}
+              placeholder="Search student, phone, hall or seat..."
+            />
+
             <div className="table-wrap">
               <table>
                 <thead>
@@ -313,7 +394,7 @@ export default function Payments() {
                 </thead>
 
                 <tbody>
-                  {dues.map((d) => (
+                  {dueList.items.map((d) => (
                     <tr key={d._id}>
                       <td>
                         {d.student?.name}
@@ -324,14 +405,14 @@ export default function Payments() {
                       </td>
 
                       <td>
-  {d.hall?.name || d.membership?.hall?.name || '-'} · Seat{' '}
-  {d.seat?.number || '-'}
+                        {d.hall?.name || d.membership?.hall?.name || '-'} · Seat{' '}
+                        {d.seat?.number || '-'}
 
-  <small>
-    {d.plan?.name} ·{' '}
-    {d.shift?.name}
-  </small>
-</td>
+                        <small>
+                          {d.plan?.name} ·{' '}
+                          {d.shift?.name}
+                        </small>
+                      </td>
 
                       <td>
                         {fmtDate(d.endDate)}
@@ -365,19 +446,11 @@ export default function Payments() {
                     </tr>
                   ))}
 
-                  {dues.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="muted"
-                      >
-                        No pending dues 🎉
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
+
+            <Pager list={dueList} />
           </>
         ) : (
           <>
@@ -451,6 +524,17 @@ export default function Payments() {
               </label>
             </div>
 
+            <div className="list-bar">
+              <input
+                type="search"
+                value={histSearchInput}
+                onChange={(e) =>
+                  setHistSearchInput(e.target.value)
+                }
+                placeholder="Search receipt no., transaction ID, student or phone..."
+              />
+            </div>
+
             <p className="muted">
               Collected{' '}
               {rupees(hist.totals.collected)} ·
@@ -495,14 +579,20 @@ export default function Payments() {
                         {p.student?.name}
 
                         <small>
-  {p.membership?.hall?.name || '-'} · Seat{' '}
-  {p.membership?.seat?.number || '-'} ·{' '}
-  {p.membership?.plan?.name}
-</small>
+                          {p.membership?.hall?.name || '-'} · Seat{' '}
+                          {p.membership?.seat?.number || '-'} ·{' '}
+                          {p.membership?.plan?.name}
+                        </small>
                       </td>
 
                       <td>
                         {p.method}
+
+                        {p.transactionId && (
+                          <small>
+                            Txn: {p.transactionId}
+                          </small>
+                        )}
                       </td>
 
                       <td
@@ -544,19 +634,45 @@ export default function Payments() {
                     </tr>
                   ))}
 
-                  {hist.items.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan="6"
-                        className="muted"
-                      >
-                        No payments found.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
+
+            {hist.items.length === 0 ? (
+              <p className="muted list-empty">
+                No payments found.
+              </p>
+            ) : (
+              <div className="pager">
+                <span className="muted">
+                  Page {hist.page || 1} of {hist.pages || 1} · {hist.total ?? hist.items.length} payments
+                </span>
+
+                <div className="pager-buttons">
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={(hist.page || 1) <= 1}
+                    onClick={() =>
+                      setHistPage((p) => Math.max(1, p - 1))
+                    }
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={(hist.page || 1) >= (hist.pages || 1)}
+                    onClick={() =>
+                      setHistPage((p) => p + 1)
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
